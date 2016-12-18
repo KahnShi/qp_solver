@@ -1,0 +1,18 @@
+<package>
+  <name>qp_solver</name>
+  <version>0.6.0</version>
+  <description>
+    A qp_solver for trajectory.
+  </description>
+  <author>Shi Fan</author>
+  <maintainer email="shifan@jsk.imi.i.u-tokyo.ac.jp">Shi Fan</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <run_depend>quadrotor_trajectory</run_depend>
+
+  <export>
+    <metapackage/>
+  </export>
+ 
+</package>

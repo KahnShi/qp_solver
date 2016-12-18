@@ -1,0 +1,11 @@
+<launch>
+  <!-- you can load an exisiting tree with <node ... args="tree.bt"> !-->
+  <!-- <node pkg="quadrotor_trajectory" type="xx_node" name="trajectory_talker" output="screen"> -->
+  <!--   <param name="resolution" value="0.1" /> -->
+  <!--   <param name="frame_id" type="string" value="world" /> -->
+  <!-- </node> -->
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find quadrotor_trajectory)/config/trajectory_visualization.rviz" />
+  <node pkg="quadrotor_trajectory" type="simulate_robot_position.py" name="simulate_robot_position" output="screen" />
+  <node pkg="quadrotor_trajectory" type="trajectory_path_visualization.py" name="trajectory_path_visualization" output="screen" />
+  <!-- <node pkg="truck_server" type="query_point_display.py" name="query_point_display" /> -->
+</launch>
