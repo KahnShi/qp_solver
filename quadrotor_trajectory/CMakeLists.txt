@@ -25,7 +25,7 @@ find_package(Eigen3 REQUIRED)
 
 add_subdirectory(qpOASES)
 link_directories(${CMAKE_CURRENT_BINARY_DIR}/qpOASES/qpOASES-3.0/bin)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/qpOASES/qpOASES-3.0/include)
+include_directories(include ${CMAKE_CURRENT_BINARY_DIR}/qpOASES/qpOASES-3.0/include)
 add_definitions(-DUSE_QPOASES)
 
 
