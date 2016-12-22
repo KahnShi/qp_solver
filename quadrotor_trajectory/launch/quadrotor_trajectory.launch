@@ -10,8 +10,12 @@
   <node pkg="quadrotor_trajectory" type="truck_trajectory_estimator_node" name="truck_trajectory_estimator_node" output="screen" >
     <param name="truck_odom_sub_topic_name" type="string" value="/simulating_truck_odom" />
     <param name="polynomial_order"  value="6" />
+    <param name="derivation_order"  value="2" />
     <param name="solver_mode"  value="0" />
     <param name="lambda_D"  value="0.01" />
-    <param name="estimating_pos_number"  value="20" />
+    <param name="estimating_odom_number"  value="20" />
+    <param name="trajectory_generate_freqency"  value="20" />
+    <param name="smooth_forward_time"  value="0.0" />
+
   </node>
 </launch>

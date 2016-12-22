@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /Path2
         - /Marker1
         - /MarkerArray1
       Splitter Ratio: 0.5
@@ -54,7 +55,7 @@ Visualization Manager:
       Buffer Length: 1
       Class: rviz/Path
       Color: 255; 85; 255
-      Enabled: true
+      Enabled: false
       Head Diameter: 0.3
       Head Length: 0.2
       Length: 0.3
@@ -71,7 +72,7 @@ Visualization Manager:
       Shaft Length: 0.1
       Topic: /truck_path
       Unreliable: false
-      Value: true
+      Value: false
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
@@ -107,7 +108,7 @@ Visualization Manager:
       Marker Topic: /truck_markers
       Name: MarkerArray
       Namespaces:
-        {}
+        basic_shapes: true
       Queue Size: 100
       Value: true
   Enabled: true

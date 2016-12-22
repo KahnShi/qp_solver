@@ -57,7 +57,7 @@ class simulate_position:
         ## Publisher
         self.__publisher_truck_pos = rospy.Publisher("/simulating_truck_pos", PoseStamped, queue_size = 10)
         self.__publisher_truck_odom = rospy.Publisher("/simulating_truck_odom", Odometry, queue_size = 10)
-        time.sleep(3)
+        time.sleep(2)
         self.__publish_pos()
 
     def __publish_pos(self):
@@ -66,16 +66,17 @@ class simulate_position:
         header.frame_id = "world"
         header.stamp = rospy.Time.now()
 
-        points_num = 20
+        points_num = 2000
         period_time = 2.0
         circle_radius = 20.0
         traverse_angle = 5.0 * period_time / circle_radius
+        traverse_angle_vel = traverse_angle / 20.0
         origin_point = [0, 0]
         start_time = 0.0
-        time_sum = 2.0
+        time_avg = 0.1
         for i in range(0, points_num):
-            cur_point = [circle_radius * math.cos(traverse_angle * i / points_num) + origin_point[0], circle_radius * math.sin(traverse_angle * i / points_num) + origin_point[1]]
-            cur_time = start_time + i * time_sum / points_num
+            cur_point = [circle_radius * math.cos(traverse_angle_vel * i) + origin_point[0], circle_radius * math.sin(traverse_angle_vel * i) + origin_point[1]]
+            cur_time = start_time + i * time_avg
             cur_pose = PoseStamped()
             cur_pose.pose.position.x = cur_point[0]
             cur_pose.pose.position.y = cur_point[1]

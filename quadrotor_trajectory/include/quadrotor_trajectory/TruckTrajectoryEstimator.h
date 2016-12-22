@@ -16,6 +16,9 @@
 #include <math.h>
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/LU>
+#include <eigen3/Eigen/Geometry>
+#include <eigen3/Eigen/Eigenvalues>
 //#include <tf/transform_broadcaster.h>
 
 /* qp solver */
@@ -36,8 +39,8 @@ namespace truck_trajectory_estimator
     //~TruckTrajectoryEstimator();
     ros::NodeHandle nh_;
     bool truck_odom_update_;
-    bool first_truck_odom_flag_;
-    bool estimating_truck_odom_flag_;
+    bool truck_odom_empty_flag_;
+    bool truck_odom_filled_flag_;
     nav_msgs::Path *truck_traj_path_;
     nav_msgs::Path *truck_origin_path_;
     visualization_msgs::MarkerArray *truck_origin_markers_;
@@ -45,14 +48,21 @@ namespace truck_trajectory_estimator
     visualization_msgs::Marker truck_marker_;
 
     int polynomial_order_;
+    int derivation_order_;
     int solver_mode_;
-    int estimating_pos_number_;
-    int current_pos_number_;
+    int estimating_odom_number_;
+    int current_odom_number_;
+    int traj_generate_freq_;
+    int new_traj_points_number_;
     double lambda_D_;
-    VectorXd *truck_pos_x_;
-    VectorXd *truck_pos_y_;
-    VectorXd *truck_pos_time_;
+    double smooth_forward_time_;
+    VectorXd *truck_odom_x_;
+    VectorXd *truck_odom_y_;
+    VectorXd *truck_odom_time_;
+    VectorXd *truck_traj_param_x_;
+    VectorXd *truck_traj_param_y_;
     double estimating_start_time_;
+    double trajectory_start_time_;
     double estimating_end_time_;
 
     std::string truck_odom_sub_topic_name_;
@@ -72,6 +82,12 @@ namespace truck_trajectory_estimator
     void truckOdomCallback(const nav_msgs::OdometryConstPtr& truck_odom_msg);
     void pathEstimator();
     void pathVisualization();
+    void polynomial_estimation();
+    void trajectory_visualization();
+    // trajectory visualization based on same odom points
+    void trajectory_visualization_same_odompoints(int mode);
+    int factorial(int n, int order);
+    double get_point_from_polynomial(char axis, double var_value);
   };
 }
 #endif

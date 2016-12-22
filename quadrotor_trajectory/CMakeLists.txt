@@ -25,6 +25,7 @@ find_package(Eigen3 REQUIRED)
 
 add_subdirectory(qpOASES)
 link_directories(${CMAKE_CURRENT_BINARY_DIR}/qpOASES/qpOASES-3.0/bin)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/qpOASES/qpOASES-3.0/include)
 add_definitions(-DUSE_QPOASES)
 
 
@@ -138,7 +139,7 @@ include_directories(
 add_library(${PROJECT_NAME}
   src/TruckTrajectoryEstimator.cpp
 )
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES} qpOASES)
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -146,8 +147,8 @@ add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
 # add_dependencies(quadrotor_trajectory ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(qp_example src/qp_example.cpp)
-target_link_libraries (qp_example ${catkin_LIBRARIES}  ${Boost_LIBRARIES} qpOASES)
+#add_executable(qp_example src/qp_example.cpp)
+#target_link_libraries (qp_example ${catkin_LIBRARIES}  ${Boost_LIBRARIES} qpOASES)
 
 add_executable(truck_trajectory_estimator_node src/truck_trajectory_estimator_node.cpp)
 target_link_libraries (truck_trajectory_estimator_node ${catkin_LIBRARIES}  ${Boost_LIBRARIES} qpOASES ${PROJECT_NAME})
