@@ -1,21 +1,19 @@
 <launch>
-  <!-- you can load an exisiting tree with <node ... args="tree.bt"> !-->
-  <!-- <node pkg="quadrotor_trajectory" type="xx_node" name="trajectory_talker" output="screen"> -->
-  <!--   <param name="resolution" value="0.1" /> -->
-  <!--   <param name="frame_id" type="string" value="world" /> -->
-  <!-- </node> -->
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find quadrotor_trajectory)/config/trajectory_visualization.rviz" />
-  <node pkg="quadrotor_trajectory" type="simulate_truck_position.py" name="simulate_robot_position" output="screen" />
-  <!-- <node pkg="quadrotor_trajectory" type="trajectory_path_visualization.py" name="trajectory_path_visualization" output="screen" /> -->
+  <arg name="circle_simulating" default="false"/>
+  <group if="$(arg circle_simulating)">
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find quadrotor_trajectory)/config/trajectory_visualization.rviz" />
+    <node pkg="quadrotor_trajectory" type="simulate_truck_position.py" name="simulate_robot_position" output="screen" />
+  </group>
   <node pkg="quadrotor_trajectory" type="truck_trajectory_estimator_node" name="truck_trajectory_estimator_node" output="screen" >
-    <param name="truck_odom_sub_topic_name" type="string" value="/simulating_truck_odom" />
+    <param name="truck_odom_sub_topic_name" type="string" value="/simulating_truck_odom" if="$(arg circle_simulating)" />
+    <param name="truck_odom_sub_topic_name" type="string" value="/truck/ground_truth/odom" unless="$(arg circle_simulating)" />
     <param name="polynomial_order"  value="6" />
     <param name="derivation_order"  value="2" />
     <param name="solver_mode"  value="0" />
     <param name="lambda_D"  value="0.01" />
-    <param name="estimating_odom_number"  value="20" />
-    <param name="trajectory_generate_freqency"  value="20" />
-    <param name="smooth_forward_time"  value="0.0" />
+    <param name="estimating_odom_number"  value="40" />
+    <param name="trajectory_generate_freqency"  value="60" />
+    <param name="smooth_forward_time"  value="1.0" />
 
   </node>
 </launch>

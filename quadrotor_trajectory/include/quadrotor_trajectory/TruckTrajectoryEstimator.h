@@ -12,6 +12,10 @@
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
+/* config */
+#include <dynamic_reconfigure/server.h>
+#include <quadrotor_trajectory/TrajectoryEstimateConfig.h>
+
 /* linear algebra */
 #include <math.h>
 #include <eigen3/Eigen/Core>
@@ -75,6 +79,10 @@ namespace truck_trajectory_estimator
     ros::Publisher pub_truck_traj_path_;
     ros::Publisher pub_truck_origin_markers_;
     ros::Publisher pub_truck_traj_markers_;
+
+    // Configure
+    boost::shared_ptr<dynamic_reconfigure::Server<quadrotor_trajectory::TrajectoryEstimateConfig> > server_ptr_;
+    void traj_estimate_config_callback(quadrotor_trajectory::TrajectoryEstimateConfig &config, uint32_t level);
 
     //void onInit(ros::NodeHandle &nh, ros::NodeHandle &pnh);
     void onInit();

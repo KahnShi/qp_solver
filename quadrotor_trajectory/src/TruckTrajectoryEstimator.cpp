@@ -17,6 +17,11 @@ namespace truck_trajectory_estimator
     pnh_.param("trajectory_generate_freqency", traj_generate_freq_, 10);
     pnh_.param("smooth_forward_time", smooth_forward_time_, 1.0);
 
+    server_ptr_ = boost::make_shared <dynamic_reconfigure::Server<quadrotor_trajectory::TrajectoryEstimateConfig> > (pnh_);
+    dynamic_reconfigure::Server<quadrotor_trajectory::TrajectoryEstimateConfig>::CallbackType f =
+      boost::bind (&TruckTrajectoryEstimator::traj_estimate_config_callback, this, _1, _2);
+    server_ptr_->setCallback (f);
+
     current_odom_number_ = 0;
     new_traj_points_number_ = 0;
     truck_odom_update_ = false;
@@ -351,5 +356,19 @@ namespace truck_trajectory_estimator
         temp *= var_value;
       }
     return result;
+  }
+
+  void TruckTrajectoryEstimator::traj_estimate_config_callback(quadrotor_trajectory::TrajectoryEstimateConfig &config, uint32_t level)
+  {
+    if (config.enable)
+      {
+        ROS_WARN("new config");
+        polynomial_order_ = config.polynomial_order;
+        derivation_order_ = config.derivation_order;
+        lambda_D_= config.lambda_D;
+        estimating_odom_number_ = config.estimating_odom_number;
+        traj_generate_freq_ = config.trajectory_generate_frequency;
+        smooth_forward_time_ = config.smooth_forward_time;
+      }
   }
 }
