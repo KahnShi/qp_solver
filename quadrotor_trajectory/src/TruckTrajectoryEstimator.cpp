@@ -13,8 +13,10 @@ namespace truck_trajectory_estimator
     pnh_.param("derivation_order", derivation_order_, 2);
     pnh_.param("solver_mode", solver_mode_, 0);
     pnh_.param("lambda_D", lambda_D_, 0.01);
-    pnh_.param("estimating_odom_number", estimating_odom_number_, 20);
-    pnh_.param("trajectory_generate_freqency", traj_generate_freq_, 10);
+    pnh_.param("estimating_odom_number", estimating_odom_number_, 40);
+    pnh_.param("trajectory_generate_freqency", traj_generate_freq_, 60);
+    pnh_.param("visualization_predict_time", visualization_predict_time_, 2.0);
+    pnh_.param("visualization_predict_time_unit", visualization_predict_time_unit_, 0.2);
     pnh_.param("smooth_forward_time", smooth_forward_time_, 1.0);
 
     server_ptr_ = boost::make_shared <dynamic_reconfigure::Server<quadrotor_trajectory::TrajectoryEstimateConfig> > (pnh_);
@@ -95,11 +97,12 @@ namespace truck_trajectory_estimator
             truck_traj_path_->header = truck_origin_path_->header;
             trajectory_start_time_ = estimating_start_time_;
             polynomial_estimation();
-            trajectory_visualization_same_odompoints(0);
+            //trajectory_visualization_same_odompoints(0);
+            trajectory_visualization();
           }
         else
           {
-            trajectory_visualization_same_odompoints(1);
+            //trajectory_visualization_same_odompoints(1);
           }
       }
     else
@@ -117,7 +120,8 @@ namespace truck_trajectory_estimator
             truck_traj_path_ = new nav_msgs::Path();
             truck_traj_path_->header = truck_origin_path_->header;
             polynomial_estimation();
-            trajectory_visualization_same_odompoints(0);
+            //trajectory_visualization_same_odompoints(0);
+            trajectory_visualization();
           }
       }
     pub_truck_origin_path_.publish(*truck_origin_path_);
@@ -254,29 +258,25 @@ namespace truck_trajectory_estimator
 
   void TruckTrajectoryEstimator::trajectory_visualization()
   {
-    // Add 3 points between 2 origin data
-    int visualization_dense = 3, interpolation_number;
-    double time_gap;
-    std_msgs::Header start_header;
-    if (new_traj_points_number_ >= traj_generate_freq_)
-      {
-        time_gap = (*truck_odom_time_)[estimating_odom_number_-1] - (*truck_odom_time_)[estimating_odom_number_-2] / visualization_dense;
-        interpolation_number = visualization_dense;
-        start_header = truck_origin_path_->poses[estimating_odom_number_-1].header;
-      }
-    else
-      {
-        time_gap = (*truck_odom_time_)[estimating_odom_number_-1] - (*truck_odom_time_)[0] / (visualization_dense*(estimating_odom_number_-1));
-        interpolation_number = visualization_dense*(estimating_odom_number_-1);
-        start_header = truck_origin_path_->poses[0].header;
-      }
-    for (int i = 0; i < visualization_dense; ++i)
+    for (int point_id = 0; point_id < estimating_odom_number_; ++point_id)
       {
         geometry_msgs::PoseStamped cur_pose;
-        // todo: set header time for every posestamped
-        // cur_pose = truck_origin_path_->poses[point_id];
-        cur_pose.pose.position.x = get_point_from_polynomial('x', time_gap*i);
-        cur_pose.pose.position.y = get_point_from_polynomial('y', time_gap*i);
+        double delta_t = (*truck_odom_time_)[point_id] - trajectory_start_time_;
+        cur_pose = truck_origin_path_->poses[point_id];
+        cur_pose.pose.position.x = get_point_from_polynomial('x', delta_t);
+        cur_pose.pose.position.y = get_point_from_polynomial('y', delta_t);
+        truck_traj_path_->poses.push_back(cur_pose);
+      }
+    int predict_number = int(visualization_predict_time_ / visualization_predict_time_unit_);
+    double delta_t_offset = (*truck_odom_time_)[estimating_odom_number_-1] - trajectory_start_time_;
+    geometry_msgs::PoseStamped last_pose = truck_origin_path_->poses[estimating_odom_number_-1];
+    for (int point_id = 0; point_id < predict_number; ++point_id)
+      {
+        geometry_msgs::PoseStamped cur_pose;
+        double delta_t = delta_t_offset + point_id * visualization_predict_time_unit_;
+        cur_pose = last_pose;
+        cur_pose.pose.position.x = get_point_from_polynomial('x', delta_t);
+        cur_pose.pose.position.y = get_point_from_polynomial('y', delta_t);
         truck_traj_path_->poses.push_back(cur_pose);
       }
     pub_truck_traj_path_.publish(*truck_traj_path_);
@@ -369,6 +369,7 @@ namespace truck_trajectory_estimator
         estimating_odom_number_ = config.estimating_odom_number;
         traj_generate_freq_ = config.trajectory_generate_frequency;
         smooth_forward_time_ = config.smooth_forward_time;
+        visualization_predict_time_ = config.visualization_predict_time;
       }
   }
 }

@@ -57,6 +57,8 @@ namespace truck_trajectory_estimator
     int estimating_odom_number_;
     int current_odom_number_;
     int traj_generate_freq_;
+    double visualization_predict_time_;
+    double visualization_predict_time_unit_;
     int new_traj_points_number_;
     double lambda_D_;
     double smooth_forward_time_;
