@@ -7,6 +7,7 @@
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Twist.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
@@ -42,11 +43,24 @@ namespace quadrotor_command
     double m_uav_acc_lb;
     Vector3d m_uav_world_pos;
     Vector3d m_truck_world_pos;
-    Vector4d m_uav_q;
+    Quaterniond m_uav_q;
+    int m_control_freq;
+    int m_takeoff_flag; //0, not takeoff; 1, taking off; 2, took off
+    double m_uav_initial_height;
+
+    // pid
+    double m_p_gain;
+    double m_i_gain;
+    Vector3d m_i_term_accumulation;
+    double m_p_term_max;
+    double m_i_term_max;
+
+
     // nav_mags::Odometry uav_odom_;
     //nav_mags::Odometry truck_odom_;
     std::string m_truck_odom_sub_topic_name;
     std::string m_uav_odom_sub_topic_name;
+    std::string m_uav_cmd_pub_topic_name;
 
     // Subscriber
     ros::Subscriber m_sub_truck_odom;
@@ -54,6 +68,7 @@ namespace quadrotor_command
 
     // Publisher
     ros::Publisher m_pub_truck_origin_path;
+    ros::Publisher m_pub_uav_cmd;
 
     // Configure
     //boost::shared_ptr<dynamic_reconfigure::Server<quadrotor_trajectory::TrajectoryEstimateConfig> > m_server_pt_;
@@ -62,7 +77,7 @@ namespace quadrotor_command
     void truckOdomCallback(const nav_msgs::OdometryConstPtr& truck_odom_msg);
     void uavOdomCallback(const nav_msgs::OdometryConstPtr& uav_odom_msg);
     bool isUavTruckNear(double threshold);
-
+    void pidTracking();
   };
 }
 

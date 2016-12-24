@@ -76,14 +76,9 @@ namespace truck_trajectory_estimator
     double estimating_end_time_;
 
     std::string truck_odom_sub_topic_name_;
-    std::string uav_odom_sub_topic_name_;
 
     /* uav command */
     QuadrotorCommand uav_commander;
-    double uav_vel_ub_;
-    double uav_vel_lb_;
-    double uav_acc_ub_;
-    double uav_acc_lb_;
 
     // Subscriber
     ros::Subscriber sub_truck_odom_;
