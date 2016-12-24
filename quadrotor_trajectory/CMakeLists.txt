@@ -138,9 +138,17 @@ include_directories(
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
   src/TruckTrajectoryEstimator.cpp
+  src/QuadrotorCommand.cpp
 )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES} qpOASES)
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
+
+# add_library(${PROJECT_NAME}
+#   src/QuadrotorCommand.cpp
+# )
+# target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES} qpOASES)
+# add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
