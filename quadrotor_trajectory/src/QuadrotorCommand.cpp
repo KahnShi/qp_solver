@@ -5,7 +5,7 @@ namespace quadrotor_command
 {
   void QuadrotorCommand::onInit()
   {
-    m_i_term_accumulation.setValue(0.0, 0.0, 0.0);
+    m_direct_i_term_accumulation.setValue(0.0, 0.0, 0.0);
     m_control_freq = 50;
     m_takeoff_flag = 0;
 
@@ -85,7 +85,7 @@ namespace quadrotor_command
     m_uav_truck_world_pos = m_uav_world_pos - m_truck_world_pos;
   }
 
-  void QuadrotorCommand::pidTracking()
+  void QuadrotorCommand::directPidTracking()
   {
     //if (m_takeoff_flag < 2)
     //return;
@@ -100,25 +100,25 @@ namespace quadrotor_command
     std::cout << "Yaw axis: " << uav_yaw / 3.14 * 180.0 << "\n";
     tf::Vector3 truck_uav_rel_uav_pos = r_z.inverse() * truck_uav_rel_world_pos;
 
-    tf::Vector3 p_term = truck_uav_rel_uav_pos * m_p_gain;
-    m_i_term_accumulation = m_i_term_accumulation + truck_uav_rel_uav_pos / m_control_freq;
-    if (p_term.getX() > m_p_term_max) p_term.setX(m_p_term_max);
-    else if (p_term.getX() < -m_p_term_max) p_term.setX(-m_p_term_max);
-    if (p_term.getY() > m_p_term_max) p_term.setY(m_p_term_max);
-    else if (p_term.getY() < -m_p_term_max) p_term.setY(-m_p_term_max);
-    if (p_term.getZ() > m_p_term_max) p_term.setZ(m_p_term_max);
-    else if (p_term.getZ() < -m_p_term_max) p_term.setZ(-m_p_term_max);
+    tf::Vector3 direct_p_term = truck_uav_rel_uav_pos * m_direct_p_gain;
+    m_direct_i_term_accumulation = m_direct_i_term_accumulation + truck_uav_rel_uav_pos / m_control_freq;
+    if (direct_p_term.getX() > m_direct_p_term_max) direct_p_term.setX(m_direct_p_term_max);
+    else if (direct_p_term.getX() < -m_direct_p_term_max) direct_p_term.setX(-m_direct_p_term_max);
+    if (direct_p_term.getY() > m_direct_p_term_max) direct_p_term.setY(m_direct_p_term_max);
+    else if (direct_p_term.getY() < -m_direct_p_term_max) direct_p_term.setY(-m_direct_p_term_max);
+    if (direct_p_term.getZ() > m_direct_p_term_max) direct_p_term.setZ(m_direct_p_term_max);
+    else if (direct_p_term.getZ() < -m_direct_p_term_max) direct_p_term.setZ(-m_direct_p_term_max);
 
-    if (m_i_term_accumulation.getX() > m_i_term_max) m_i_term_accumulation.setX(m_i_term_max);
-    else if (m_i_term_accumulation.getX() < -m_i_term_max) m_i_term_accumulation.setX(-m_i_term_max);
-    if (m_i_term_accumulation.getY() > m_i_term_max) m_i_term_accumulation.setY(m_i_term_max);
-    else if (m_i_term_accumulation.getY() < -m_i_term_max) m_i_term_accumulation.setY(-m_i_term_max);
-    if (m_i_term_accumulation.getZ() > m_i_term_max) m_i_term_accumulation.setZ(m_i_term_max);
-    else if (m_i_term_accumulation.getZ() < -m_i_term_max) m_i_term_accumulation.setZ(-m_i_term_max);
+    if (m_direct_i_term_accumulation.getX() > m_direct_i_term_max) m_direct_i_term_accumulation.setX(m_direct_i_term_max);
+    else if (m_direct_i_term_accumulation.getX() < -m_direct_i_term_max) m_direct_i_term_accumulation.setX(-m_direct_i_term_max);
+    if (m_direct_i_term_accumulation.getY() > m_direct_i_term_max) m_direct_i_term_accumulation.setY(m_direct_i_term_max);
+    else if (m_direct_i_term_accumulation.getY() < -m_direct_i_term_max) m_direct_i_term_accumulation.setY(-m_direct_i_term_max);
+    if (m_direct_i_term_accumulation.getZ() > m_direct_i_term_max) m_direct_i_term_accumulation.setZ(m_direct_i_term_max);
+    else if (m_direct_i_term_accumulation.getZ() < -m_direct_i_term_max) m_direct_i_term_accumulation.setZ(-m_direct_i_term_max);
 
-    std::cout << "P term: " << p_term.getX()<<' ' << p_term.getY() << "\n";
-    std::cout << "I term: " << m_i_term_accumulation.getX()<<' ' << m_i_term_accumulation.getY() << "\n";
-    tf::Vector3 origin_cmd_vel = p_term + m_i_term_accumulation;
+    std::cout << "P term: " << direct_p_term.getX()<<' ' << direct_p_term.getY() << "\n";
+    std::cout << "I term: " << m_direct_i_term_accumulation.getX()<<' ' << m_direct_i_term_accumulation.getY() << "\n";
+    tf::Vector3 origin_cmd_vel = direct_p_term + m_direct_i_term_accumulation;
 
     // Currently only consider speed in x,y dim
     double origin_vel_norm = sqrt(pow(origin_cmd_vel.getX(), 2) + pow(origin_cmd_vel.getY(), 2));
@@ -139,6 +139,12 @@ namespace quadrotor_command
 
     std::cout << "Truck Uav dis: " << truck_uav_rel_uav_pos.getX() << ", " << truck_uav_rel_uav_pos.getY() << "\n";
     std::cout << "Uav cmd vel: " << uav_cmd.linear.x << ", " << uav_cmd.linear.y << "\n\n";
+  }
+
+
+  void QuadrotorCommand::trajectoryTracking(Vector3d uav_des_pos, Vector3d uav_des_vel)
+  {
+    
   }
 
 }

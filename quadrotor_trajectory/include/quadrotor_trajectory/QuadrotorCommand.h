@@ -51,11 +51,18 @@ namespace quadrotor_command
     double m_uav_initial_height;
 
     // pid
-    double m_p_gain;
-    double m_i_gain;
-    tf::Vector3 m_i_term_accumulation;
-    double m_p_term_max;
-    double m_i_term_max;
+    double m_direct_p_gain;
+    double m_direct_i_gain;
+    tf::Vector3 m_direct_i_term_accumulation;
+    double m_direct_p_term_max;
+    double m_direct_i_term_max;
+
+    double m_traj_track_p_gain;
+    double m_traj_track_i_gain;
+    double m_traj_track_d_gain;
+    tf::Vector3 m_traj_track_i_term_accumulation;
+    double m_traj_track_p_term_max;
+    double m_traj_track_i_term_max;
 
 
     // nav_mags::Odometry uav_odom_;
@@ -80,7 +87,8 @@ namespace quadrotor_command
     void uavOdomCallback(const nav_msgs::OdometryConstPtr& uav_odom_msg);
     bool isUavTruckNear(double threshold);
     void updateUavTruckRelPos();
-    void pidTracking();
+    void directPidTracking();
+    void trajectoryTracking(Vector3d uav_des_pos, Vector3d uav_des_vel);
   };
 }
 

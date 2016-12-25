@@ -22,8 +22,8 @@
     <param name="uav_vel_lower_bound"  value="-10.0" />
     <param name="uav_acc_upper_bound"  value="4.0" />
     <param name="uav_acc_lower_bound"  value="-4.0" />
-    <param name="uav_cmd_p_gain"  value="1.0" />
-    <param name="uav_cmd_i_gain"  value="0.02" />
+    <param name="uav_cmd_direct_p_gain"  value="1.0" />
+    <param name="uav_cmd_direct_i_gain"  value="0.02" />
 
   </node>
 </launch>

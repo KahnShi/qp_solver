@@ -81,6 +81,7 @@ namespace truck_trajectory_estimator
     /* uav command */
     QuadrotorCommand uav_commander_;
     int uav_state_; //0,not finish taking off; 1,pid tracking; 2,traj trakcing
+    tf::Vector3 uav_start_pos_;
 
     // Subscriber
     ros::Subscriber sub_truck_odom_;
@@ -102,12 +103,13 @@ namespace truck_trajectory_estimator
     void truckOdomCallback(const nav_msgs::OdometryConstPtr& truck_odom_msg);
     void pathEstimator();
     void pathVisualization();
-    void polynomial_estimation();
-    void trajectory_visualization();
+    void polynomialEstimation();
+    void trajectoryVisualization();
     // trajectory visualization based on same odom points
     void trajectory_visualization_same_odompoints(int mode);
     int factorial(int n, int order);
-    double get_point_from_polynomial(char axis, double var_value);
+    double getPointFromPolynomial(char axis, double var_value);
+    Vector3d nOrderPolynomial(int n, double t);
   };
 }
 #endif
