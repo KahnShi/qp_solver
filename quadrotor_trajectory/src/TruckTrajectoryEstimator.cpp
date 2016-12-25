@@ -310,9 +310,9 @@ namespace truck_trajectory_estimator
         cur_pose.pose.position.y = get_point_from_polynomial('y', delta_t);
         truck_traj_path_->poses.push_back(cur_pose);
 
-        cur_pose.pose.position.x += uav_commander_.m_uav_truck_world_pos[0];
-        cur_pose.pose.position.y += uav_commander_.m_uav_truck_world_pos[1];
-        cur_pose.pose.position.z += uav_commander_.m_uav_truck_world_pos[2];
+        cur_pose.pose.position.x += uav_commander_.m_uav_truck_world_pos.getX();
+        cur_pose.pose.position.y += uav_commander_.m_uav_truck_world_pos.getY();
+        cur_pose.pose.position.z += uav_commander_.m_uav_truck_world_pos.getZ();
         uav_des_traj_path_->poses.push_back(cur_pose);
       }
     pub_truck_traj_path_.publish(*truck_traj_path_);

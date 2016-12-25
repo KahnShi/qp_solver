@@ -23,7 +23,7 @@
 #include <eigen3/Eigen/LU>
 #include <eigen3/Eigen/Geometry>
 #include <eigen3/Eigen/Eigenvalues>
-//#include <tf/transform_broadcaster.h>
+#include <tf/transform_broadcaster.h>
 
 /* qp solver */
 #include <qpOASES.hpp>

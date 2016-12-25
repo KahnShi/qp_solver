@@ -15,6 +15,7 @@ set(PACKAGE_DEPENDENCIES
   nav_msgs
   visualization_msgs
   dynamic_reconfigure
+  tf
 )
 
 find_package(catkin REQUIRED COMPONENTS ${PACKAGE_DEPENDENCIES}

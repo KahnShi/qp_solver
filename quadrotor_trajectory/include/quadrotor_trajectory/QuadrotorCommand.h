@@ -24,6 +24,7 @@
 #include <eigen3/Eigen/LU>
 #include <eigen3/Eigen/Geometry>
 #include <eigen3/Eigen/Eigenvalues>
+#include <tf/transform_broadcaster.h>
 
 /* general header file */
 #include <iostream>
@@ -41,10 +42,10 @@ namespace quadrotor_command
     double m_uav_vel_lb;
     double m_uav_acc_ub;
     double m_uav_acc_lb;
-    Vector3d m_uav_world_pos;
-    Vector3d m_truck_world_pos;
-    Vector3d m_uav_truck_world_pos;
-    Quaterniond m_uav_q;
+    tf::Vector3 m_uav_world_pos;
+    tf::Vector3 m_truck_world_pos;
+    tf::Vector3 m_uav_truck_world_pos;
+    tf::Quaternion m_uav_q;
     int m_control_freq;
     int m_takeoff_flag; //0, not takeoff; 1, taking off; 2, took off
     double m_uav_initial_height;
@@ -52,7 +53,7 @@ namespace quadrotor_command
     // pid
     double m_p_gain;
     double m_i_gain;
-    Vector3d m_i_term_accumulation;
+    tf::Vector3 m_i_term_accumulation;
     double m_p_term_max;
     double m_i_term_max;
 
