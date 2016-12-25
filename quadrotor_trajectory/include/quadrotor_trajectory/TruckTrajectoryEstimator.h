@@ -51,6 +51,7 @@ namespace truck_trajectory_estimator
     bool truck_odom_filled_flag_;
     nav_msgs::Path *truck_traj_path_;
     nav_msgs::Path *truck_origin_path_;
+    nav_msgs::Path *uav_des_traj_path_;
     visualization_msgs::MarkerArray *truck_origin_markers_;
     visualization_msgs::MarkerArray *truck_traj_markers_;
     visualization_msgs::Marker truck_marker_;
@@ -78,7 +79,8 @@ namespace truck_trajectory_estimator
     std::string truck_odom_sub_topic_name_;
 
     /* uav command */
-    QuadrotorCommand uav_commander;
+    QuadrotorCommand uav_commander_;
+    int uav_state_; //0,not finish taking off; 1,pid tracking; 2,traj trakcing
 
     // Subscriber
     ros::Subscriber sub_truck_odom_;
@@ -86,6 +88,7 @@ namespace truck_trajectory_estimator
     // Publisher
     ros::Publisher pub_truck_origin_path_;
     ros::Publisher pub_truck_traj_path_;
+    ros::Publisher pub_uav_des_traj_path_;
     ros::Publisher pub_truck_origin_markers_;
     ros::Publisher pub_truck_traj_markers_;
 

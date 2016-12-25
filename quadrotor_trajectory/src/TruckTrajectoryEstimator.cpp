@@ -18,17 +18,17 @@ namespace truck_trajectory_estimator
     pnh_.param("visualization_predict_time", visualization_predict_time_, 2.0);
     pnh_.param("visualization_predict_time_unit", visualization_predict_time_unit_, 0.2);
     pnh_.param("smooth_forward_time", smooth_forward_time_, 1.0);
-    pnh_.param("uav_odom_sub_topic_name", uav_commander.m_uav_odom_sub_topic_name, std::string("/ground_truth/state"));
-    pnh_.param("uav_cmd_pub_topic_name", uav_commander.m_uav_cmd_pub_topic_name, std::string("/cmd_vel"));
-    pnh_.param("uav_vel_upper_bound", uav_commander.m_uav_vel_ub, 10.0);
-    pnh_.param("uav_vel_lower_bound", uav_commander.m_uav_vel_lb, -10.0);
-    pnh_.param("uav_acc_upper_bound", uav_commander.m_uav_acc_ub, 4.0);
-    pnh_.param("uav_acc_lower_bound", uav_commander.m_uav_acc_lb, -4.0);
-    pnh_.param("uav_cmd_p_gain", uav_commander.m_p_gain, 1.0);
-    pnh_.param("uav_cmd_i_gain", uav_commander.m_i_gain, 0.02);
-    pnh_.param("uav_cmd_p_term_max", uav_commander.m_p_term_max, 6.0);
-    pnh_.param("uav_cmd_i_term_max", uav_commander.m_i_term_max, 4.0);
-    pnh_.param("uav_initial_height", uav_commander.m_uav_initial_height, 6.0);
+    pnh_.param("uav_odom_sub_topic_name", uav_commander_.m_uav_odom_sub_topic_name, std::string("/ground_truth/state"));
+    pnh_.param("uav_cmd_pub_topic_name", uav_commander_.m_uav_cmd_pub_topic_name, std::string("/cmd_vel"));
+    pnh_.param("uav_vel_upper_bound", uav_commander_.m_uav_vel_ub, 10.0);
+    pnh_.param("uav_vel_lower_bound", uav_commander_.m_uav_vel_lb, -10.0);
+    pnh_.param("uav_acc_upper_bound", uav_commander_.m_uav_acc_ub, 4.0);
+    pnh_.param("uav_acc_lower_bound", uav_commander_.m_uav_acc_lb, -4.0);
+    pnh_.param("uav_cmd_p_gain", uav_commander_.m_p_gain, 1.0);
+    pnh_.param("uav_cmd_i_gain", uav_commander_.m_i_gain, 0.02);
+    pnh_.param("uav_cmd_p_term_max", uav_commander_.m_p_term_max, 6.0);
+    pnh_.param("uav_cmd_i_term_max", uav_commander_.m_i_term_max, 4.0);
+    pnh_.param("uav_initial_height", uav_commander_.m_uav_initial_height, 6.0);
 
 
     server_ptr_ = boost::make_shared <dynamic_reconfigure::Server<quadrotor_trajectory::TrajectoryEstimateConfig> > (pnh_);
@@ -46,13 +46,15 @@ namespace truck_trajectory_estimator
     truck_traj_param_y_ = new VectorXd(polynomial_order_);
 
     // init for uav command
-    uav_commander.m_truck_odom_sub_topic_name = truck_odom_sub_topic_name_;
-    uav_commander.onInit();
+    uav_commander_.m_truck_odom_sub_topic_name = truck_odom_sub_topic_name_;
+    uav_commander_.onInit();
+    uav_state_ = 0;
 
     sub_truck_odom_ = nh_.subscribe<nav_msgs::Odometry>(truck_odom_sub_topic_name_, 1, &TruckTrajectoryEstimator::truckOdomCallback, this);
 
     pub_truck_origin_path_ = nh_.advertise<nav_msgs::Path>("/truck_path", 1);
     pub_truck_traj_path_ = nh_.advertise<nav_msgs::Path>("/trajectory_path", 1);
+    pub_uav_des_traj_path_ = nh_.advertise<nav_msgs::Path>("/uav_des_traj_path", 1);
     pub_truck_origin_markers_ = nh_.advertise<visualization_msgs::MarkerArray>("/truck_markers", 1);
     pub_truck_traj_markers_ = nh_.advertise<visualization_msgs::MarkerArray>("/trajectory_markers", 1);
 
@@ -63,7 +65,28 @@ namespace truck_trajectory_estimator
   void TruckTrajectoryEstimator::truckOdomCallback(const nav_msgs::OdometryConstPtr& truck_odom_msg)
   {
     //uav command
-    uav_commander.pidTracking();
+    if (uav_state_ == 0)
+      {
+        if (uav_commander_.m_takeoff_flag == 2)
+          uav_state_ = 1;
+      }
+    if (uav_state_ == 1)
+      {
+        if (uav_commander_.isUavTruckNear(2.0) && truck_odom_filled_flag_)
+          {
+            std::cout << "UAV is close to truck.\n";
+            std::cout << "Starting trajectory tracking.\n";
+            uav_state_ = 2;
+            pub_uav_des_traj_path_.publish(*uav_des_traj_path_);
+          }
+        else
+          uav_commander_.pidTracking();
+      }
+    if (uav_state_ == 2)
+      {
+        // Todo: follow the trajectory instead of simple pid control
+        uav_commander_.pidTracking();
+      }
 
     nav_msgs::Odometry truck_odom = *truck_odom_msg;
     geometry_msgs::PoseStamped cur_truck_pose_stamped;
@@ -115,6 +138,9 @@ namespace truck_trajectory_estimator
             delete truck_traj_path_;
             truck_traj_path_ = new nav_msgs::Path();
             truck_traj_path_->header = truck_origin_path_->header;
+            delete uav_des_traj_path_;
+            uav_des_traj_path_ = new nav_msgs::Path();
+            uav_des_traj_path_->header = truck_origin_path_->header;
             trajectory_start_time_ = estimating_start_time_;
             polynomial_estimation();
             //trajectory_visualization_same_odompoints(0);
@@ -139,6 +165,8 @@ namespace truck_trajectory_estimator
             truck_odom_filled_flag_ = true;
             truck_traj_path_ = new nav_msgs::Path();
             truck_traj_path_->header = truck_origin_path_->header;
+            uav_des_traj_path_ = new nav_msgs::Path();
+            uav_des_traj_path_->header = truck_origin_path_->header;
             polynomial_estimation();
             //trajectory_visualization_same_odompoints(0);
             trajectory_visualization();
@@ -155,24 +183,6 @@ namespace truck_trajectory_estimator
     MatrixXd H = MatrixXd::Zero(polynomial_order_, polynomial_order_);
     VectorXd g_x = VectorXd::Zero(polynomial_order_);
     VectorXd g_y = VectorXd::Zero(polynomial_order_);
-
-    // for (int point_index = 0; point_index < estimating_odom_number_; ++point_index)
-    //   {
-    //     for (int row_id = 0; row_id < polynomial_order_; ++row_id)
-    //       {
-    //         double t_add = pow((*truck_odom_time_)[point_index], row_id);
-    //         // Assign value for g vector
-    //         g_x[row_id] += (-2*(*truck_odom_x_)[point_index] * t_add);
-    //         g_y[row_id] += (-2*(*truck_odom_y_)[point_index] * t_add);
-
-    //         for (int col_id = 0; col_id < polynomial_order_; ++col_id)
-    //           {
-    //             T(row_id, col_id) += pow((*truck_odom_time_)[point_index], (row_id+col_id));
-    //             if (row_id >= derivation_order_ and col_id >= derivation_order_)
-    //               D(row_id, col_id) += pow((*truck_odom_time_)[point_index]+1.0, (row_id+col_id-2*derivation_order_+1)) * pow(factorial(row_id,derivation_order_), 2) / (row_id+col_id-2*derivation_order_+1);
-    //           }
-    //       }
-    //   }
 
     for (int point_index = 0; point_index < estimating_odom_number_; ++point_index)
       {
@@ -238,11 +248,10 @@ namespace truck_trajectory_estimator
         exampleSQ.getPrimalSolution(truck_traj_param_x_->data());
         //printf( " ];  objVal = %e\n\n", exampleSQ.getObjVal() );
       }
-    // printf("\nxOpt = [ ");
-    std::cout <<"[x]: ";
-    for (int i = 0; i < polynomial_order_; ++i)
-      std::cout << truck_traj_param_x_->data()[i] << ", ";
-    printf("\n");
+    // std::cout <<"[x]: ";
+    // for (int i = 0; i < polynomial_order_; ++i)
+    //   std::cout << truck_traj_param_x_->data()[i] << ", ";
+    // printf("\n");
 
     /* Solve second QP. */
     nWSR = 10;
@@ -254,7 +263,6 @@ namespace truck_trajectory_estimator
       //exampleSQ.hotstart( (const real_t*)(H.data()),(const real_t*)(g_y.data()),NULL,NULL,NULL,NULL,NULL,nWSR,0 );
       exampleSQ.hotstart(H.data(),g_y.data(),NULL,NULL,NULL,NULL,NULL,nWSR,0 );
 
-    //printf( "\nnWSR = %d\n\n", nWSR );
 
     /* Get and print solution of second QP. */
     if (solver_mode_ == 0)
@@ -268,10 +276,10 @@ namespace truck_trajectory_estimator
         //printf( " ];  objVal = %e\n\n", exampleSQ.getObjVal() );
       }
 
-    std::cout <<"[y]: ";
-    for (int i = 0; i < polynomial_order_; ++i)
-      std::cout << truck_traj_param_y_->data()[i] << ", ";
-    printf("\n");
+    // std::cout <<"[y]: ";
+    // for (int i = 0; i < polynomial_order_; ++i)
+    //   std::cout << truck_traj_param_y_->data()[i] << ", ";
+    // printf("\n");
 
 
   }
@@ -287,6 +295,9 @@ namespace truck_trajectory_estimator
         cur_pose.pose.position.y = get_point_from_polynomial('y', delta_t);
         truck_traj_path_->poses.push_back(cur_pose);
       }
+
+    uav_commander_.updateUavTruckRelPos();
+
     int predict_number = int(visualization_predict_time_ / visualization_predict_time_unit_);
     double delta_t_offset = (*truck_odom_time_)[estimating_odom_number_-1] - trajectory_start_time_;
     geometry_msgs::PoseStamped last_pose = truck_origin_path_->poses[estimating_odom_number_-1];
@@ -298,8 +309,15 @@ namespace truck_trajectory_estimator
         cur_pose.pose.position.x = get_point_from_polynomial('x', delta_t);
         cur_pose.pose.position.y = get_point_from_polynomial('y', delta_t);
         truck_traj_path_->poses.push_back(cur_pose);
+
+        cur_pose.pose.position.x += uav_commander_.m_uav_truck_world_pos[0];
+        cur_pose.pose.position.y += uav_commander_.m_uav_truck_world_pos[1];
+        cur_pose.pose.position.z += uav_commander_.m_uav_truck_world_pos[2];
+        uav_des_traj_path_->poses.push_back(cur_pose);
       }
     pub_truck_traj_path_.publish(*truck_traj_path_);
+    if (uav_state_ == 2)
+      pub_uav_des_traj_path_.publish(*uav_des_traj_path_);
   }
 
   // trajectory visualization based on same odom points

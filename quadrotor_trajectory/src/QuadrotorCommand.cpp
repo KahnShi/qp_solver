@@ -39,11 +39,13 @@ namespace quadrotor_command
     if (m_takeoff_flag == 0)
       {
         geometry_msgs::Twist uav_cmd;
+        m_pub_uav_cmd.publish(uav_cmd);
+        sleep(0.2);
         uav_cmd.linear.x = 0;
         uav_cmd.linear.y = 0;
         uav_cmd.linear.z = 1;
         m_pub_uav_cmd.publish(uav_cmd);
-        sleep(0.1);
+        sleep(0.2);
         m_pub_uav_cmd.publish(uav_cmd);
         std::cout << "Take off command is sent.\n";
         m_takeoff_flag = 1;
@@ -71,12 +73,24 @@ namespace quadrotor_command
     return (pow((m_uav_world_pos[0]-m_truck_world_pos[0]), 2) + pow((m_uav_world_pos[1]-m_truck_world_pos[1]), 2) < threshold);
   }
 
+  void QuadrotorCommand::updateUavTruckRelPos()
+  {
+    m_uav_truck_world_pos = m_uav_world_pos - m_truck_world_pos;
+  }
+
   void QuadrotorCommand::pidTracking()
   {
-    if (m_takeoff_flag < 2)
-      return;
+    //if (m_takeoff_flag < 2)
+    //return;
     Vector3d truck_uav_rel_world_pos = m_truck_world_pos - m_uav_world_pos;
-    Vector3d truck_uav_rel_uav_pos = m_uav_q.normalized().toRotationMatrix() * truck_uav_rel_world_pos;
+    Vector3d uav_euler = m_uav_q.normalized().toRotationMatrix().eulerAngles(2, 1, 0);
+    Matrix3d uav_rot_mat;
+    uav_rot_mat = AngleAxisd(uav_euler[0], Vector3d::UnitZ())
+      * AngleAxisd(0, Vector3d::UnitX())
+      * AngleAxisd(0,  Vector3d::UnitY());
+    std::cout << "Q: " << m_uav_q.x() << ' ' << m_uav_q.y() << ' ' << m_uav_q.z() << ' ' << m_uav_q.w() << "\n";
+    std::cout << "Yaw axis: " << uav_euler[0] << "\n";
+    Vector3d truck_uav_rel_uav_pos = uav_rot_mat.inverse() * truck_uav_rel_world_pos;
 
     Vector3d p_term = truck_uav_rel_uav_pos * m_p_gain;
     m_i_term_accumulation = m_i_term_accumulation + truck_uav_rel_uav_pos / m_control_freq;
@@ -110,6 +124,9 @@ namespace quadrotor_command
         uav_cmd.linear.z = 0;
       }
     m_pub_uav_cmd.publish(uav_cmd);
+
+    std::cout << "Truck Uav dis: " << truck_uav_rel_uav_pos[0] << ", " << truck_uav_rel_uav_pos[1] << "\n";
+    std::cout << "Uav cmd vel: " << uav_cmd.linear.x << ", " << uav_cmd.linear.y << "\n\n";
   }
 
 }
