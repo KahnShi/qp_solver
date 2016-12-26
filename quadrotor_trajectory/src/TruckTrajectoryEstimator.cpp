@@ -24,17 +24,23 @@ namespace truck_trajectory_estimator
     pnh_.param("uav_vel_lower_bound", uav_commander_.m_uav_vel_lb, -10.0);
     pnh_.param("uav_acc_upper_bound", uav_commander_.m_uav_acc_ub, 4.0);
     pnh_.param("uav_acc_lower_bound", uav_commander_.m_uav_acc_lb, -4.0);
+    pnh_.param("direct_pid_mode", uav_commander_.m_direct_pid_mode, false);
     pnh_.param("uav_cmd_direct_p_gain", uav_commander_.m_direct_p_gain, 1.0);
     pnh_.param("uav_cmd_direct_i_gain", uav_commander_.m_direct_i_gain, 0.02);
     pnh_.param("uav_cmd_direct_p_term_max", uav_commander_.m_direct_p_term_max, 6.0);
     pnh_.param("uav_cmd_direct_i_term_max", uav_commander_.m_direct_i_term_max, 4.0);
     pnh_.param("uav_initial_height", uav_commander_.m_uav_initial_height, 6.0);
     pnh_.param("uav_cmd_traj_track_p_gain", uav_commander_.m_traj_track_p_gain, 1.0);
-    pnh_.param("uav_cmd_traj_track_i_gain", uav_commander_.m_traj_track_i_gain, 0.02);
-    pnh_.param("uav_cmd_traj_track_d_gain", uav_commander_.m_traj_track_d_gain, 0.4);
+    pnh_.param("uav_cmd_traj_track_i_gain", uav_commander_.m_traj_track_i_gain, 0.0);
+    pnh_.param("uav_cmd_traj_track_d_gain", uav_commander_.m_traj_track_d_gain, 1.0);
     pnh_.param("uav_cmd_traj_track_p_term_max", uav_commander_.m_traj_track_p_term_max, 6.0);
     pnh_.param("uav_cmd_traj_track_i_term_max", uav_commander_.m_traj_track_i_term_max, 4.0);
+    pnh_.param("uav_cmd_traj_track_d_term_max", uav_commander_.m_traj_track_d_term_max, 4.0);
 
+    if (uav_commander_.m_direct_pid_mode)
+      std::cout << "DIRECT PID MODE\n\n";
+    else
+      std::cout << "TRAJECTORY TRACKING MODE\n\n";
 
     server_ptr_ = boost::make_shared <dynamic_reconfigure::Server<quadrotor_trajectory::TrajectoryEstimateConfig> > (pnh_);
     dynamic_reconfigure::Server<quadrotor_trajectory::TrajectoryEstimateConfig>::CallbackType f =
@@ -90,11 +96,16 @@ namespace truck_trajectory_estimator
     if (uav_state_ == 2)
       {
         // Direct pid control
-        uav_commander_.directPidTracking();
-        double current_time = truck_odom_msg->header.stamp.toSec();
-        Vector3d uav_des_pos = nOrderPolynomial(0, current_time) + Vector3d(uav_start_pos_.getX(), uav_start_pos_.getY(), uav_start_pos_.getZ());
-        Vector3d uav_des_vel = nOrderPolynomial(1, current_time);
-        uav_commander_.trajectoryTracking(uav_des_pos, uav_des_vel);
+        if (uav_commander_.m_direct_pid_mode)
+          uav_commander_.directPidTracking();
+        // Trajectory tracking control
+        else
+          {
+            double current_time = truck_odom_msg->header.stamp.toSec();
+            Vector3d uav_des_pos = nOrderPolynomial(0, current_time) + Vector3d(uav_start_pos_.getX(), uav_start_pos_.getY(), uav_start_pos_.getZ());
+            Vector3d uav_des_vel = nOrderPolynomial(1, current_time);
+            uav_commander_.trajectoryTracking(uav_des_pos, uav_des_vel);
+          }
       }
 
     nav_msgs::Odometry truck_odom = *truck_odom_msg;
@@ -433,6 +444,10 @@ namespace truck_trajectory_estimator
         traj_generate_freq_ = config.trajectory_generate_frequency;
         smooth_forward_time_ = config.smooth_forward_time;
         visualization_predict_time_ = config.visualization_predict_time;
+        uav_commander_.m_direct_pid_mode = config.direct_pid_mode;
+        uav_commander_.m_traj_track_p_gain = config.traj_track_p_param;
+        uav_commander_.m_traj_track_i_gain = config.traj_track_i_param;
+        uav_commander_.m_traj_track_d_gain = config.traj_track_d_param;
       }
   }
 }

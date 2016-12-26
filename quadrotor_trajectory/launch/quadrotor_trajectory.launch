@@ -1,6 +1,7 @@
 <launch>
   <arg name="circle_simulating" default="false"/>
   <arg name="gazebo" default="true"/>
+  <arg name="direct_pid" default="false"/>
   <group if="$(arg circle_simulating)">
     <node pkg="rviz" type="rviz" name="rviz" args="-d $(find quadrotor_trajectory)/config/trajectory_visualization.rviz" />
     <node pkg="quadrotor_trajectory" type="simulate_truck_position.py" name="simulate_robot_position" output="screen" />
@@ -15,15 +16,20 @@
     <param name="solver_mode"  value="0" />
     <param name="lambda_D"  value="0.01" />
     <param name="estimating_odom_number"  value="10" />
-    <param name="trajectory_generate_freqency"  value="30" />
+    <param name="trajectory_generate_freqency"  value="100" />
     <param name="visualization_predict_time"  value="6.0" />
     <param name="smooth_forward_time"  value="1.0" />
     <param name="uav_vel_upper_bound"  value="10.0" />
     <param name="uav_vel_lower_bound"  value="-10.0" />
     <param name="uav_acc_upper_bound"  value="4.0" />
     <param name="uav_acc_lower_bound"  value="-4.0" />
+
+    <param name="direct_pid_mode"  value="$(arg direct_pid)" />
     <param name="uav_cmd_direct_p_gain"  value="1.0" />
     <param name="uav_cmd_direct_i_gain"  value="0.02" />
+    <param name="uav_cmd_traj_track_p_gain"  value="0.3" />
+    <param name="uav_cmd_traj_track_i_gain"  value="0.0" />
+    <param name="uav_cmd_traj_track_d_gain"  value="1.0" />
 
   </node>
 </launch>

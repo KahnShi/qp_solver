@@ -43,6 +43,7 @@ namespace quadrotor_command
     double m_uav_acc_ub;
     double m_uav_acc_lb;
     tf::Vector3 m_uav_world_pos;
+    tf::Vector3 m_uav_world_vel;
     tf::Vector3 m_truck_world_pos;
     tf::Vector3 m_uav_truck_world_pos;
     tf::Quaternion m_uav_q;
@@ -51,6 +52,7 @@ namespace quadrotor_command
     double m_uav_initial_height;
 
     // pid
+    bool m_direct_pid_mode;
     double m_direct_p_gain;
     double m_direct_i_gain;
     tf::Vector3 m_direct_i_term_accumulation;
@@ -63,6 +65,7 @@ namespace quadrotor_command
     tf::Vector3 m_traj_track_i_term_accumulation;
     double m_traj_track_p_term_max;
     double m_traj_track_i_term_max;
+    double m_traj_track_d_term_max;
 
 
     // nav_mags::Odometry uav_odom_;
