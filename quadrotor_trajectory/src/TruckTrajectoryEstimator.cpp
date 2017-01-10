@@ -11,7 +11,6 @@ namespace truck_trajectory_estimator
     pnh_.param("truck_odom_sub_topic_name", truck_odom_sub_topic_name_, std::string("/simulating_truck_odom"));
     pnh_.param("polynomial_order", polynomial_order_, 6);
     pnh_.param("derivation_order", derivation_order_, 2);
-    pnh_.param("solver_mode", solver_mode_, 0);
     pnh_.param("lambda_D", lambda_D_, 0.01);
     pnh_.param("estimating_odom_number", estimating_odom_number_, 40);
     pnh_.param("trajectory_generate_freqency", traj_generate_freq_, 60);
@@ -239,7 +238,6 @@ namespace truck_trajectory_estimator
     /* Setting up QProblemB object. */
 
     QProblemB exampleQ( polynomial_order_ );
-    SQProblem exampleSQ( polynomial_order_, 0);
 
     Options options;
     //options.enableFlippingBounds = BT_FALSE;
@@ -250,32 +248,16 @@ namespace truck_trajectory_estimator
     // Bakui's
     options.enableEqualities = BT_TRUE;
     options.printLevel = PL_LOW;
-    if (solver_mode_ == 0)
-      exampleQ.setOptions( options );
-    else if (solver_mode_ == 1)
-      exampleSQ.setOptions( options );
-
+    exampleQ.setOptions( options );
 
     /* Solve first QP. */
     int_t nWSR = 10;
-    if (solver_mode_ == 0)
-      //exampleQ.init( (const real_t*)(H.data()),(const real_t*)(g_x.data()),NULL,NULL, nWSR,0 );
-      exampleQ.init(H.data(),g_x.data(),NULL,NULL, nWSR,0 );
-    else if (solver_mode_ == 1)
-      //exampleSQ.init( (const real_t*)(H.data()),(const real_t*)(g_x.data()),NULL,NULL,NULL,NULL,NULL,nWSR,0 );
-      exampleSQ.init(H.data(),g_x.data(),NULL,NULL,NULL,NULL,NULL,nWSR,0 );
+    exampleQ.init(H.data(),g_x.data(),NULL,NULL, nWSR,0 );
 
     /* Get and print solution of first QP. */
-    if (solver_mode_ == 0)
-      {
-        exampleQ.getPrimalSolution(truck_traj_param_x_->data());
-        //printf( " ];  objVal = %e\n\n", exampleQ.getObjVal() );
-      }
-    else if (solver_mode_ == 1)
-      {
-        exampleSQ.getPrimalSolution(truck_traj_param_x_->data());
-        //printf( " ];  objVal = %e\n\n", exampleSQ.getObjVal() );
-      }
+    exampleQ.getPrimalSolution(truck_traj_param_x_->data());
+    //printf( " ];  objVal = %e\n\n", exampleQ.getObjVal() );
+
     // std::cout <<"[x]: ";
     // for (int i = 0; i < polynomial_order_; ++i)
     //   std::cout << truck_traj_param_x_->data()[i] << ", ";
@@ -284,25 +266,11 @@ namespace truck_trajectory_estimator
     /* Solve second QP. */
     nWSR = 10;
 
-    if (solver_mode_ == 0)
-      //exampleQ.hotstart( (const real_t*)(g_y.data()),NULL,NULL, nWSR,0 );
-      exampleQ.hotstart(g_y.data(),NULL,NULL, nWSR,0 );
-    else if (solver_mode_ == 1)
-      //exampleSQ.hotstart( (const real_t*)(H.data()),(const real_t*)(g_y.data()),NULL,NULL,NULL,NULL,NULL,nWSR,0 );
-      exampleSQ.hotstart(H.data(),g_y.data(),NULL,NULL,NULL,NULL,NULL,nWSR,0 );
-
+    exampleQ.hotstart(g_y.data(),NULL,NULL, nWSR,0 );
 
     /* Get and print solution of second QP. */
-    if (solver_mode_ == 0)
-      {
-        exampleQ.getPrimalSolution(truck_traj_param_y_->data());
-        //printf( " ];  objVal = %e\n\n", exampleQ.getObjVal() );
-      }
-    else if (solver_mode_ == 1)
-      {
-        exampleSQ.getPrimalSolution(truck_traj_param_y_->data());
-        //printf( " ];  objVal = %e\n\n", exampleSQ.getObjVal() );
-      }
+    exampleQ.getPrimalSolution(truck_traj_param_y_->data());
+    //printf( " ];  objVal = %e\n\n", exampleQ.getObjVal() );
 
     // std::cout <<"[y]: ";
     // for (int i = 0; i < polynomial_order_; ++i)

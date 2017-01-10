@@ -58,7 +58,6 @@ namespace truck_trajectory_estimator
 
     int polynomial_order_;
     int derivation_order_;
-    int solver_mode_;
     int estimating_odom_number_;
     int current_odom_number_;
     int traj_generate_freq_;
