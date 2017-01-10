@@ -33,9 +33,9 @@ namespace truck_trajectory_estimator
     pnh_.param("uav_cmd_traj_track_p_gain", uav_commander_.m_traj_track_p_gain, 1.0);
     pnh_.param("uav_cmd_traj_track_i_gain", uav_commander_.m_traj_track_i_gain, 0.0);
     pnh_.param("uav_cmd_traj_track_d_gain", uav_commander_.m_traj_track_d_gain, 1.0);
-    pnh_.param("uav_cmd_traj_track_p_term_max", uav_commander_.m_traj_track_p_term_max, 6.0);
-    pnh_.param("uav_cmd_traj_track_i_term_max", uav_commander_.m_traj_track_i_term_max, 4.0);
-    pnh_.param("uav_cmd_traj_track_d_term_max", uav_commander_.m_traj_track_d_term_max, 4.0);
+    pnh_.param("uav_cmd_traj_track_p_term_max", uav_commander_.m_traj_track_p_term_max, 5.0);
+    pnh_.param("uav_cmd_traj_track_i_term_max", uav_commander_.m_traj_track_i_term_max, 3.0);
+    pnh_.param("uav_cmd_traj_track_d_term_max", uav_commander_.m_traj_track_d_term_max, 3.0);
 
     if (uav_commander_.m_direct_pid_mode)
       std::cout << "DIRECT PID MODE\n\n";
@@ -97,7 +97,7 @@ namespace truck_trajectory_estimator
           {
             std::cout << "UAV is close to truck.\n";
             std::cout << "Starting trajectory tracking.\n";
-            uav_state_ = 2;
+            uav_state_ = 3;
             pub_uav_des_traj_path_.publish(*uav_des_traj_path_);
           }
         else
@@ -345,7 +345,7 @@ namespace truck_trajectory_estimator
         uav_des_traj_path_->poses.push_back(cur_pose);
       }
     pub_truck_traj_path_.publish(*truck_traj_path_);
-    if (uav_state_ == 2)
+    if (uav_state_ == 3)
       pub_uav_des_traj_path_.publish(*uav_des_traj_path_);
   }
 
