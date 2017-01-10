@@ -234,10 +234,10 @@ namespace truck_trajectory_estimator
     // Assign value for H matrix
     H = 2 * T + lambda_D_ * estimating_odom_number_ * D;
 
-
     /* Setting up QProblemB object. */
 
-    QProblemB exampleQ( polynomial_order_ );
+    QProblemB exampleQ_x( polynomial_order_ );
+    QProblemB exampleQ_y( polynomial_order_ );
 
     Options options;
     //options.enableFlippingBounds = BT_FALSE;
@@ -248,35 +248,22 @@ namespace truck_trajectory_estimator
     // Bakui's
     options.enableEqualities = BT_TRUE;
     options.printLevel = PL_LOW;
-    exampleQ.setOptions( options );
+    exampleQ_x.setOptions( options );
+    exampleQ_y.setOptions( options );
 
-    /* Solve first QP. */
-    int_t nWSR = 10;
-    exampleQ.init(H.data(),g_x.data(),NULL,NULL, nWSR,0 );
+    int_t nWSR_x = 10;
+    exampleQ_x.init(H.data(),g_x.data(),NULL,NULL, nWSR_x,0 );
+    exampleQ_x.getPrimalSolution(truck_traj_param_x_->data());
 
-    /* Get and print solution of first QP. */
-    exampleQ.getPrimalSolution(truck_traj_param_x_->data());
+    int_t nWSR_y = 10;
+    exampleQ_y.init(H.data(),g_y.data(),NULL,NULL, nWSR_y,0 );
+    exampleQ_y.getPrimalSolution(truck_traj_param_y_->data());
     //printf( " ];  objVal = %e\n\n", exampleQ.getObjVal() );
 
     // std::cout <<"[x]: ";
     // for (int i = 0; i < polynomial_order_; ++i)
     //   std::cout << truck_traj_param_x_->data()[i] << ", ";
     // printf("\n");
-
-    /* Solve second QP. */
-    nWSR = 10;
-
-    exampleQ.hotstart(g_y.data(),NULL,NULL, nWSR,0 );
-
-    /* Get and print solution of second QP. */
-    exampleQ.getPrimalSolution(truck_traj_param_y_->data());
-    //printf( " ];  objVal = %e\n\n", exampleQ.getObjVal() );
-
-    // std::cout <<"[y]: ";
-    // for (int i = 0; i < polynomial_order_; ++i)
-    //   std::cout << truck_traj_param_y_->data()[i] << ", ";
-    // printf("\n");
-
 
   }
 
