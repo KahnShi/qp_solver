@@ -13,7 +13,6 @@ set(PACKAGE_DEPENDENCIES
   geometry_msgs
   std_msgs
   nav_msgs
-  visualization_msgs
   dynamic_reconfigure
   tf
 )
@@ -21,9 +20,10 @@ set(PACKAGE_DEPENDENCIES
 find_package(catkin REQUIRED COMPONENTS ${PACKAGE_DEPENDENCIES}
 )
 
-## System dependencies are found with CMake's conventions
+## System dependenies are found with CMake's conventions
+find_package(cmake_modules REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
-find_package(Eigen3 REQUIRED)
+find_package(Eigen REQUIRED)
 
 add_subdirectory(qpOASES)
 link_directories(${CMAKE_CURRENT_BINARY_DIR}/qpOASES/qpOASES-3.0/bin)

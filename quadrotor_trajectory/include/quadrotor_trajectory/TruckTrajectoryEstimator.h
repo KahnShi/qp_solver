@@ -101,12 +101,10 @@ namespace truck_trajectory_estimator
     void onInit();
     void markerInit(visualization_msgs::Marker &marker, char color='r');
     void truckOdomCallback(const nav_msgs::OdometryConstPtr& truck_odom_msg);
-    void pathEstimator();
-    void pathVisualization();
+    // Estimate truck's path using QP
     void polynomialEstimation();
+    // Visualize truck and drone's trajectory
     void trajectoryVisualization();
-    // trajectory visualization based on same odom points
-    void trajectory_visualization_same_odompoints(int mode);
     int factorial(int n, int order);
     double getPointFromPolynomial(char axis, double var_value);
     Vector3d nOrderPolynomial(int n, double t);

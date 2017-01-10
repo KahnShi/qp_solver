@@ -80,8 +80,18 @@ namespace truck_trajectory_estimator
       {
         if (uav_commander_.m_takeoff_flag == 2)
           uav_state_ = 1;
+        else
+          return;
       }
+    // Uav wait until it could "see" the truck.
     if (uav_state_ == 1)
+      {
+        if (uav_commander_.isUavTruckNear(5.0))
+          uav_state_ = 2;
+        else
+          return;
+      }
+    if (uav_state_ == 2)
       {
         if (uav_commander_.isUavTruckNear(2.0) && truck_odom_filled_flag_)
           {
@@ -93,7 +103,7 @@ namespace truck_trajectory_estimator
         else
           uav_commander_.directPidTracking();
       }
-    if (uav_state_ == 2)
+    if (uav_state_ == 3)
       {
         // Direct pid control
         if (uav_commander_.m_direct_pid_mode)
@@ -116,7 +126,7 @@ namespace truck_trajectory_estimator
     truck_marker_.id += 1;
     truck_marker_.header = truck_odom.header;
 
-    //std::cout << "received \n";
+    // Get first truck odom
     if (truck_odom_empty_flag_)
       {
         // Init for variables in callback function
@@ -163,14 +173,13 @@ namespace truck_trajectory_estimator
             uav_des_traj_path_->header = truck_origin_path_->header;
             trajectory_start_time_ = estimating_start_time_;
             polynomialEstimation();
-            //trajectory_visualization_same_odompoints(0);
             trajectoryVisualization();
           }
         else
           {
-            //trajectory_visualization_same_odompoints(1);
           }
       }
+    // Truck's trajectory is estimated after enough odom is got.
     else
       {
         (*truck_odom_time_)[current_odom_number_] = truck_odom.header.stamp.toSec();
@@ -188,7 +197,6 @@ namespace truck_trajectory_estimator
             uav_des_traj_path_ = new nav_msgs::Path();
             uav_des_traj_path_->header = truck_origin_path_->header;
             polynomialEstimation();
-            //trajectory_visualization_same_odompoints(0);
             trajectoryVisualization();
           }
       }
@@ -339,35 +347,6 @@ namespace truck_trajectory_estimator
     pub_truck_traj_path_.publish(*truck_traj_path_);
     if (uav_state_ == 2)
       pub_uav_des_traj_path_.publish(*uav_des_traj_path_);
-  }
-
-  // trajectory visualization based on same odom points
-  // mode 0: push_back all the poses into traj_path
-  // mode 1: add new pose to traj_path
-  void TruckTrajectoryEstimator::trajectory_visualization_same_odompoints(int mode)
-  {
-    if (mode == 0)
-      {
-        for (int point_id = 0; point_id < estimating_odom_number_; ++point_id)
-          {
-            geometry_msgs::PoseStamped cur_pose;
-            double delta_t = (*truck_odom_time_)[point_id] - trajectory_start_time_;
-            cur_pose = truck_origin_path_->poses[point_id];
-            cur_pose.pose.position.x = getPointFromPolynomial('x', delta_t);
-            cur_pose.pose.position.y = getPointFromPolynomial('y', delta_t);
-            truck_traj_path_->poses.push_back(cur_pose);
-          }
-      }
-    else
-      {
-        geometry_msgs::PoseStamped cur_pose;
-        double delta_t = (*truck_odom_time_)[estimating_odom_number_-1] - trajectory_start_time_;
-        cur_pose = truck_origin_path_->poses[estimating_odom_number_-1];
-        cur_pose.pose.position.x = getPointFromPolynomial('x', delta_t);
-        cur_pose.pose.position.y = getPointFromPolynomial('y', delta_t);
-        truck_traj_path_->poses.push_back(cur_pose);
-      }
-    pub_truck_traj_path_.publish(*truck_traj_path_);
   }
 
   void TruckTrajectoryEstimator::markerInit(visualization_msgs::Marker &marker, char color)
