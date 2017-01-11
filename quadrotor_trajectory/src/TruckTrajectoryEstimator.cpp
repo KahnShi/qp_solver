@@ -6,67 +6,67 @@ namespace truck_trajectory_estimator
 {
   void TruckTrajectoryEstimator::onInit()
   {
-    ros::NodeHandle pnh_("~");
+    ros::NodeHandle pnh("~");
     /* ROS Node */
-    pnh_.param("truck_odom_sub_topic_name", truck_odom_sub_topic_name_, std::string("/simulating_truck_odom"));
-    pnh_.param("polynomial_order", polynomial_order_, 6);
-    pnh_.param("derivation_order", derivation_order_, 2);
-    pnh_.param("lambda_D", lambda_D_, 0.01);
-    pnh_.param("estimating_odom_number", estimating_odom_number_, 40);
-    pnh_.param("trajectory_generate_freqency", traj_generate_freq_, 60);
-    pnh_.param("visualization_predict_time", visualization_predict_time_, 2.0);
-    pnh_.param("visualization_predict_time_unit", visualization_predict_time_unit_, 0.2);
-    pnh_.param("smooth_forward_time", smooth_forward_time_, 1.0);
-    pnh_.param("uav_odom_sub_topic_name", uav_commander_.m_uav_odom_sub_topic_name, std::string("/ground_truth/state"));
-    pnh_.param("uav_cmd_pub_topic_name", uav_commander_.m_uav_cmd_pub_topic_name, std::string("/cmd_vel"));
-    pnh_.param("uav_vel_upper_bound", uav_commander_.m_uav_vel_ub, 10.0);
-    pnh_.param("uav_vel_lower_bound", uav_commander_.m_uav_vel_lb, -10.0);
-    pnh_.param("uav_acc_upper_bound", uav_commander_.m_uav_acc_ub, 4.0);
-    pnh_.param("uav_acc_lower_bound", uav_commander_.m_uav_acc_lb, -4.0);
-    pnh_.param("direct_pid_mode", uav_commander_.m_direct_pid_mode, false);
-    pnh_.param("uav_cmd_direct_p_gain", uav_commander_.m_direct_p_gain, 1.0);
-    pnh_.param("uav_cmd_direct_i_gain", uav_commander_.m_direct_i_gain, 0.02);
-    pnh_.param("uav_cmd_direct_p_term_max", uav_commander_.m_direct_p_term_max, 6.0);
-    pnh_.param("uav_cmd_direct_i_term_max", uav_commander_.m_direct_i_term_max, 4.0);
-    pnh_.param("uav_initial_height", uav_commander_.m_uav_initial_height, 6.0);
-    pnh_.param("uav_cmd_traj_track_p_gain", uav_commander_.m_traj_track_p_gain, 1.0);
-    pnh_.param("uav_cmd_traj_track_i_gain", uav_commander_.m_traj_track_i_gain, 0.0);
-    pnh_.param("uav_cmd_traj_track_d_gain", uav_commander_.m_traj_track_d_gain, 1.0);
-    pnh_.param("uav_cmd_traj_track_p_term_max", uav_commander_.m_traj_track_p_term_max, 5.0);
-    pnh_.param("uav_cmd_traj_track_i_term_max", uav_commander_.m_traj_track_i_term_max, 3.0);
-    pnh_.param("uav_cmd_traj_track_d_term_max", uav_commander_.m_traj_track_d_term_max, 3.0);
+    pnh.param("truck_odom_sub_topic_name", m_truck_odom_sub_topic_name, std::string("/simulating_truck_odom"));
+    pnh.param("polynomial_order", m_truck_traj_order, 6);
+    pnh.param("derivation_order", m_truck_traj_dev_order, 2);
+    pnh.param("lambda_D", m_truck_lambda_D, 0.01);
+    pnh.param("estimating_odom_number", m_n_truck_estimate_odom, 40);
+    pnh.param("trajectory_generate_freqency", m_truck_traj_generate_freq, 60);
+    pnh.param("visualization_predict_time", m_truck_vis_predict_time, 2.0);
+    pnh.param("m_truck_vis_predict_time_unit", m_truck_vis_predict_time_unit, 0.2);
+    pnh.param("smooth_forward_time", m_truck_smooth_forward_time, 1.0);
+    pnh.param("uav_odom_sub_topic_name", m_uav_commander.m_uav_odom_sub_topic_name, std::string("/ground_truth/state"));
+    pnh.param("uav_cmd_pub_topic_name", m_uav_commander.m_uav_cmd_pub_topic_name, std::string("/cmd_vel"));
+    pnh.param("uav_vel_upper_bound", m_uav_commander.m_uav_vel_ub, 10.0);
+    pnh.param("uav_vel_lower_bound", m_uav_commander.m_uav_vel_lb, -10.0);
+    pnh.param("uav_acc_upper_bound", m_uav_commander.m_uav_acc_ub, 4.0);
+    pnh.param("uav_acc_lower_bound", m_uav_commander.m_uav_acc_lb, -4.0);
+    pnh.param("direct_pid_mode", m_uav_commander.m_direct_pid_mode, false);
+    pnh.param("uav_cmd_direct_p_gain", m_uav_commander.m_direct_p_gain, 1.0);
+    pnh.param("uav_cmd_direct_i_gain", m_uav_commander.m_direct_i_gain, 0.02);
+    pnh.param("uav_cmd_direct_p_term_max", m_uav_commander.m_direct_p_term_max, 6.0);
+    pnh.param("uav_cmd_direct_i_term_max", m_uav_commander.m_direct_i_term_max, 4.0);
+    pnh.param("uav_initial_height", m_uav_commander.m_uav_initial_height, 6.0);
+    pnh.param("uav_cmd_traj_track_p_gain", m_uav_commander.m_traj_track_p_gain, 1.0);
+    pnh.param("uav_cmd_traj_track_i_gain", m_uav_commander.m_traj_track_i_gain, 0.0);
+    pnh.param("uav_cmd_traj_track_d_gain", m_uav_commander.m_traj_track_d_gain, 1.0);
+    pnh.param("uav_cmd_traj_track_p_term_max", m_uav_commander.m_traj_track_p_term_max, 5.0);
+    pnh.param("uav_cmd_traj_track_i_term_max", m_uav_commander.m_traj_track_i_term_max, 3.0);
+    pnh.param("uav_cmd_traj_track_d_term_max", m_uav_commander.m_traj_track_d_term_max, 3.0);
 
-    if (uav_commander_.m_direct_pid_mode)
+    if (m_uav_commander.m_direct_pid_mode)
       std::cout << "DIRECT PID MODE\n\n";
     else
       std::cout << "TRAJECTORY TRACKING MODE\n\n";
 
-    server_ptr_ = boost::make_shared <dynamic_reconfigure::Server<quadrotor_trajectory::TrajectoryEstimateConfig> > (pnh_);
+    m_server_ptr = boost::make_shared <dynamic_reconfigure::Server<quadrotor_trajectory::TrajectoryEstimateConfig> > (pnh);
     dynamic_reconfigure::Server<quadrotor_trajectory::TrajectoryEstimateConfig>::CallbackType f =
       boost::bind (&TruckTrajectoryEstimator::traj_estimate_config_callback, this, _1, _2);
-    server_ptr_->setCallback (f);
+    m_server_ptr->setCallback (f);
 
-    current_odom_number_ = 0;
-    new_traj_points_number_ = 0;
-    truck_odom_update_ = false;
-    truck_odom_empty_flag_ = true;
-    truck_odom_filled_flag_ = false;
-    markerInit(truck_marker_);
-    truck_traj_param_x_ = new VectorXd(polynomial_order_);
-    truck_traj_param_y_ = new VectorXd(polynomial_order_);
+    m_n_current_odom = 0;
+    m_n_truck_new_odom = 0;
+    m_truck_odom_update = false;
+    m_truck_odom_empty_flag = true;
+    m_truck_odom_filled_flag = false;
+    markerInit(m_truck_marker);
+    m_truck_traj_param_x_ptr = new VectorXd(m_truck_traj_order);
+    m_truck_traj_param_y_ptr = new VectorXd(m_truck_traj_order);
 
     // init for uav command
-    uav_commander_.m_truck_odom_sub_topic_name = truck_odom_sub_topic_name_;
-    uav_commander_.onInit();
-    uav_state_ = 0;
+    m_uav_commander.m_truck_odom_sub_topic_name = m_truck_odom_sub_topic_name;
+    m_uav_commander.onInit();
+    m_uav_state = 0;
 
-    sub_truck_odom_ = nh_.subscribe<nav_msgs::Odometry>(truck_odom_sub_topic_name_, 1, &TruckTrajectoryEstimator::truckOdomCallback, this);
+    m_sub_truck_odom = m_nh.subscribe<nav_msgs::Odometry>(m_truck_odom_sub_topic_name, 1, &TruckTrajectoryEstimator::truckOdomCallback, this);
 
-    pub_truck_origin_path_ = nh_.advertise<nav_msgs::Path>("/truck_path", 1);
-    pub_truck_traj_path_ = nh_.advertise<nav_msgs::Path>("/trajectory_path", 1);
-    pub_uav_des_traj_path_ = nh_.advertise<nav_msgs::Path>("/uav_des_traj_path", 1);
-    pub_truck_origin_markers_ = nh_.advertise<visualization_msgs::MarkerArray>("/truck_markers", 1);
-    pub_truck_traj_markers_ = nh_.advertise<visualization_msgs::MarkerArray>("/trajectory_markers", 1);
+    m_pub_truck_origin_path = m_nh.advertise<nav_msgs::Path>("/truck_path", 1);
+    m_pub_truck_traj_path = m_nh.advertise<nav_msgs::Path>("/trajectory_path", 1);
+    m_pub_uav_des_traj_path = m_nh.advertise<nav_msgs::Path>("/uav_des_traj_path", 1);
+    m_pub_truck_origin_markers = m_nh.advertise<visualization_msgs::MarkerArray>("/truck_markers", 1);
+    m_pub_truck_traj_markers = m_nh.advertise<visualization_msgs::MarkerArray>("/trajectory_markers", 1);
 
 
   }
@@ -75,45 +75,45 @@ namespace truck_trajectory_estimator
   void TruckTrajectoryEstimator::truckOdomCallback(const nav_msgs::OdometryConstPtr& truck_odom_msg)
   {
     //uav command
-    if (uav_state_ == 0)
+    if (m_uav_state == 0)
       {
-        if (uav_commander_.m_takeoff_flag == 2)
-          uav_state_ = 1;
+        if (m_uav_commander.m_takeoff_flag == 2)
+          m_uav_state = 1;
         else
           return;
       }
     // Uav wait until it could "see" the truck.
-    if (uav_state_ == 1)
+    if (m_uav_state == 1)
       {
-        if (uav_commander_.isUavTruckNear(5.0))
-          uav_state_ = 2;
+        if (m_uav_commander.isUavTruckNear(5.0))
+          m_uav_state = 2;
         else
           return;
       }
-    if (uav_state_ == 2)
+    if (m_uav_state == 2)
       {
-        if (uav_commander_.isUavTruckNear(2.0) && truck_odom_filled_flag_)
+        if (m_uav_commander.isUavTruckNear(2.0) && m_truck_odom_filled_flag)
           {
             std::cout << "UAV is close to truck.\n";
             std::cout << "Starting trajectory tracking.\n";
-            uav_state_ = 3;
-            pub_uav_des_traj_path_.publish(*uav_des_traj_path_);
+            m_uav_state = 3;
+            m_pub_uav_des_traj_path.publish(*m_uav_des_traj_path_ptr);
           }
         else
-          uav_commander_.directPidTracking();
+          m_uav_commander.directPidTracking();
       }
-    if (uav_state_ == 3)
+    if (m_uav_state == 3)
       {
         // Direct pid control
-        if (uav_commander_.m_direct_pid_mode)
-          uav_commander_.directPidTracking();
+        if (m_uav_commander.m_direct_pid_mode)
+          m_uav_commander.directPidTracking();
         // Trajectory tracking control
         else
           {
             double current_time = truck_odom_msg->header.stamp.toSec();
-            Vector3d uav_des_pos = nOrderPolynomial(0, current_time) + Vector3d(uav_start_pos_.getX(), uav_start_pos_.getY(), uav_start_pos_.getZ());
+            Vector3d uav_des_pos = nOrderPolynomial(0, current_time) + Vector3d(m_uav_start_pos.getX(), m_uav_start_pos.getY(), m_uav_start_pos.getZ());
             Vector3d uav_des_vel = nOrderPolynomial(1, current_time);
-            uav_commander_.trajectoryTracking(uav_des_pos, uav_des_vel);
+            m_uav_commander.trajectoryTracking(uav_des_pos, uav_des_vel);
           }
       }
 
@@ -121,56 +121,56 @@ namespace truck_trajectory_estimator
     geometry_msgs::PoseStamped cur_truck_pose_stamped;
     cur_truck_pose_stamped.header = truck_odom.header;
     cur_truck_pose_stamped.pose = truck_odom.pose.pose;
-    truck_marker_.pose = truck_odom.pose.pose;
-    truck_marker_.id += 1;
-    truck_marker_.header = truck_odom.header;
+    m_truck_marker.pose = truck_odom.pose.pose;
+    m_truck_marker.id += 1;
+    m_truck_marker.header = truck_odom.header;
 
     // Get first truck odom
-    if (truck_odom_empty_flag_)
+    if (m_truck_odom_empty_flag)
       {
         // Init for variables in callback function
-        estimating_start_time_ = truck_odom.header.stamp.toSec();
-        truck_odom_x_ = new VectorXd(estimating_odom_number_);
-        truck_odom_y_ = new VectorXd(estimating_odom_number_);
-        truck_odom_time_ = new VectorXd(estimating_odom_number_);
-        truck_odom_empty_flag_ = false;
-        truck_origin_path_ = new nav_msgs::Path();
-        truck_origin_path_->header = truck_odom.header;
-        truck_origin_markers_ = new visualization_msgs::MarkerArray();
+        m_truck_estimate_start_time = truck_odom.header.stamp.toSec();
+        m_truck_odom_x_ptr = new VectorXd(m_n_truck_estimate_odom);
+        m_truck_odom_y_ptr = new VectorXd(m_n_truck_estimate_odom);
+        m_truck_odom_time_ptr = new VectorXd(m_n_truck_estimate_odom);
+        m_truck_odom_empty_flag = false;
+        m_truck_origin_path_ptr = new nav_msgs::Path();
+        m_truck_origin_path_ptr->header = truck_odom.header;
+        m_truck_origin_markers_ptr = new visualization_msgs::MarkerArray();
       }
 
-    if (truck_odom_filled_flag_)
+    if (m_truck_odom_filled_flag)
       {
         // Erase the first element in array data
-        for (int i = 0; i < estimating_odom_number_-1; ++i)
+        for (int i = 0; i < m_n_truck_estimate_odom-1; ++i)
           {
-            (*truck_odom_time_)[i] = (*truck_odom_time_)[i+1];
-            (*truck_odom_x_)[i] = (*truck_odom_x_)[i+1];
-            (*truck_odom_y_)[i] = (*truck_odom_y_)[i+1];
-            truck_origin_path_->header = truck_origin_path_->poses[0].header;
-            truck_origin_path_->poses[i] = truck_origin_path_->poses[i+1];
-            truck_origin_markers_->markers[i] = truck_origin_markers_->markers[i+1];
+            (*m_truck_odom_time_ptr)[i] = (*m_truck_odom_time_ptr)[i+1];
+            (*m_truck_odom_x_ptr)[i] = (*m_truck_odom_x_ptr)[i+1];
+            (*m_truck_odom_y_ptr)[i] = (*m_truck_odom_y_ptr)[i+1];
+            m_truck_origin_path_ptr->header = m_truck_origin_path_ptr->poses[0].header;
+            m_truck_origin_path_ptr->poses[i] = m_truck_origin_path_ptr->poses[i+1];
+            m_truck_origin_markers_ptr->markers[i] = m_truck_origin_markers_ptr->markers[i+1];
           }
 
-        estimating_start_time_ = (*truck_odom_time_)[0];
+        m_truck_estimate_start_time = (*m_truck_odom_time_ptr)[0];
 
-        (*truck_odom_time_)[estimating_odom_number_-1] = truck_odom.header.stamp.toSec();
-        (*truck_odom_x_)[estimating_odom_number_-1] = truck_odom.pose.pose.position.x;
-        (*truck_odom_y_)[estimating_odom_number_-1] = truck_odom.pose.pose.position.y;
-        truck_origin_path_->poses[estimating_odom_number_-1] = cur_truck_pose_stamped;
-        truck_origin_markers_->markers[estimating_odom_number_-1] = truck_marker_;
+        (*m_truck_odom_time_ptr)[m_n_truck_estimate_odom-1] = truck_odom.header.stamp.toSec();
+        (*m_truck_odom_x_ptr)[m_n_truck_estimate_odom-1] = truck_odom.pose.pose.position.x;
+        (*m_truck_odom_y_ptr)[m_n_truck_estimate_odom-1] = truck_odom.pose.pose.position.y;
+        m_truck_origin_path_ptr->poses[m_n_truck_estimate_odom-1] = cur_truck_pose_stamped;
+        m_truck_origin_markers_ptr->markers[m_n_truck_estimate_odom-1] = m_truck_marker;
 
-        ++new_traj_points_number_;
-        if (new_traj_points_number_ >= traj_generate_freq_)
+        ++m_n_truck_new_odom;
+        if (m_n_truck_new_odom >= m_truck_traj_generate_freq)
           {
-            new_traj_points_number_ = 0;
-            delete truck_traj_path_;
-            truck_traj_path_ = new nav_msgs::Path();
-            truck_traj_path_->header = truck_origin_path_->header;
-            delete uav_des_traj_path_;
-            uav_des_traj_path_ = new nav_msgs::Path();
-            uav_des_traj_path_->header = truck_origin_path_->header;
-            trajectory_start_time_ = estimating_start_time_;
+            m_n_truck_new_odom = 0;
+            delete m_truck_traj_path_ptr;
+            m_truck_traj_path_ptr = new nav_msgs::Path();
+            m_truck_traj_path_ptr->header = m_truck_origin_path_ptr->header;
+            delete m_uav_des_traj_path_ptr;
+            m_uav_des_traj_path_ptr = new nav_msgs::Path();
+            m_uav_des_traj_path_ptr->header = m_truck_origin_path_ptr->header;
+            m_truck_traj_start_time = m_truck_estimate_start_time;
             polynomialEstimation();
             trajectoryVisualization();
           }
@@ -181,63 +181,63 @@ namespace truck_trajectory_estimator
     // Truck's trajectory is estimated after enough odom is got.
     else
       {
-        (*truck_odom_time_)[current_odom_number_] = truck_odom.header.stamp.toSec();
-        (*truck_odom_x_)[current_odom_number_] = truck_odom.pose.pose.position.x;
-        (*truck_odom_y_)[current_odom_number_] = truck_odom.pose.pose.position.y;
-        truck_origin_path_->poses.push_back(cur_truck_pose_stamped);
-        truck_origin_markers_->markers.push_back(truck_marker_);
+        (*m_truck_odom_time_ptr)[m_n_current_odom] = truck_odom.header.stamp.toSec();
+        (*m_truck_odom_x_ptr)[m_n_current_odom] = truck_odom.pose.pose.position.x;
+        (*m_truck_odom_y_ptr)[m_n_current_odom] = truck_odom.pose.pose.position.y;
+        m_truck_origin_path_ptr->poses.push_back(cur_truck_pose_stamped);
+        m_truck_origin_markers_ptr->markers.push_back(m_truck_marker);
 
-        ++current_odom_number_;
-        if (current_odom_number_ >= estimating_odom_number_)
+        ++m_n_current_odom;
+        if (m_n_current_odom >= m_n_truck_estimate_odom)
           {
-            truck_odom_filled_flag_ = true;
-            truck_traj_path_ = new nav_msgs::Path();
-            truck_traj_path_->header = truck_origin_path_->header;
-            uav_des_traj_path_ = new nav_msgs::Path();
-            uav_des_traj_path_->header = truck_origin_path_->header;
+            m_truck_odom_filled_flag = true;
+            m_truck_traj_path_ptr = new nav_msgs::Path();
+            m_truck_traj_path_ptr->header = m_truck_origin_path_ptr->header;
+            m_uav_des_traj_path_ptr = new nav_msgs::Path();
+            m_uav_des_traj_path_ptr->header = m_truck_origin_path_ptr->header;
             polynomialEstimation();
             trajectoryVisualization();
           }
       }
-    pub_truck_origin_path_.publish(*truck_origin_path_);
-    pub_truck_origin_markers_.publish(*truck_origin_markers_);
+    m_pub_truck_origin_path.publish(*m_truck_origin_path_ptr);
+    m_pub_truck_origin_markers.publish(*m_truck_origin_markers_ptr);
   }
 
   void TruckTrajectoryEstimator::polynomialEstimation()
   {
-    MatrixXd T = MatrixXd::Zero(polynomial_order_, polynomial_order_);
-    MatrixXd D = MatrixXd::Zero(polynomial_order_, polynomial_order_);
-    MatrixXd H = MatrixXd::Zero(polynomial_order_, polynomial_order_);
-    VectorXd g_x = VectorXd::Zero(polynomial_order_);
-    VectorXd g_y = VectorXd::Zero(polynomial_order_);
+    MatrixXd T = MatrixXd::Zero(m_truck_traj_order, m_truck_traj_order);
+    MatrixXd D = MatrixXd::Zero(m_truck_traj_order, m_truck_traj_order);
+    MatrixXd H = MatrixXd::Zero(m_truck_traj_order, m_truck_traj_order);
+    VectorXd g_x = VectorXd::Zero(m_truck_traj_order);
+    VectorXd g_y = VectorXd::Zero(m_truck_traj_order);
 
-    for (int point_index = 0; point_index < estimating_odom_number_; ++point_index)
+    for (int point_index = 0; point_index < m_n_truck_estimate_odom; ++point_index)
       {
-        VectorXd t_t = VectorXd::Zero(polynomial_order_);
+        VectorXd t_t = VectorXd::Zero(m_truck_traj_order);
         //t_t_d is t_t after derivation_order operation
-        VectorXd t_t_d = VectorXd::Zero(polynomial_order_);
+        VectorXd t_t_d = VectorXd::Zero(m_truck_traj_order);
         t_t[0] = 1;
-        t_t_d[derivation_order_] = 1;
-        for (int i = 1; i < polynomial_order_; ++i)
+        t_t_d[m_truck_traj_dev_order] = 1;
+        for (int i = 1; i < m_truck_traj_order; ++i)
           {
-            t_t[i] = t_t[i-1] * ((*truck_odom_time_)[point_index] - estimating_start_time_);
-            if (i >= derivation_order_)
-              //t_t_d[i] = t_t[i-derivation_order_];
-              t_t_d[i] = t_t_d[i-1] * ((*truck_odom_time_)[point_index] + smooth_forward_time_ - estimating_start_time_);
+            t_t[i] = t_t[i-1] * ((*m_truck_odom_time_ptr)[point_index] - m_truck_estimate_start_time);
+            if (i >= m_truck_traj_dev_order)
+              //t_t_d[i] = t_t[i-m_truck_traj_dev_order];
+              t_t_d[i] = t_t_d[i-1] * ((*m_truck_odom_time_ptr)[point_index] + m_truck_smooth_forward_time - m_truck_estimate_start_time);
           }
         T = T + t_t * t_t.transpose();
         D = D + t_t_d * t_t_d.transpose();
-        g_x = g_x + (-2) * t_t * (*truck_odom_x_)[point_index];
-        g_y = g_y + (-2) * t_t * (*truck_odom_y_)[point_index];
+        g_x = g_x + (-2) * t_t * (*m_truck_odom_x_ptr)[point_index];
+        g_y = g_y + (-2) * t_t * (*m_truck_odom_y_ptr)[point_index];
       }
 
     // Assign value for H matrix
-    H = 2 * T + lambda_D_ * estimating_odom_number_ * D;
+    H = 2 * T + m_truck_lambda_D * m_n_truck_estimate_odom * D;
 
     /* Setting up QProblemB object. */
 
-    QProblemB exampleQ_x( polynomial_order_ );
-    QProblemB exampleQ_y( polynomial_order_ );
+    QProblemB exampleQ_x( m_truck_traj_order );
+    QProblemB exampleQ_y( m_truck_traj_order );
 
     Options options;
     //options.enableFlippingBounds = BT_FALSE;
@@ -253,15 +253,15 @@ namespace truck_trajectory_estimator
 
     int_t nWSR_x = 10;
     exampleQ_x.init(H.data(),g_x.data(),NULL,NULL, nWSR_x,0 );
-    exampleQ_x.getPrimalSolution(truck_traj_param_x_->data());
+    exampleQ_x.getPrimalSolution(m_truck_traj_param_x_ptr->data());
 
     int_t nWSR_y = 10;
     exampleQ_y.init(H.data(),g_y.data(),NULL,NULL, nWSR_y,0 );
-    exampleQ_y.getPrimalSolution(truck_traj_param_y_->data());
+    exampleQ_y.getPrimalSolution(m_truck_traj_param_y_ptr->data());
     //printf( " ];  objVal = %e\n\n", exampleQ.getObjVal() );
 
     // std::cout <<"[x]: ";
-    // for (int i = 0; i < polynomial_order_; ++i)
+    // for (int i = 0; i < m_truck_traj_order; ++i)
     //   std::cout << truck_traj_param_x_->data()[i] << ", ";
     // printf("\n");
 
@@ -269,39 +269,39 @@ namespace truck_trajectory_estimator
 
   void TruckTrajectoryEstimator::trajectoryVisualization()
   {
-    for (int point_id = 0; point_id < estimating_odom_number_; ++point_id)
+    for (int point_id = 0; point_id < m_n_truck_estimate_odom; ++point_id)
       {
         geometry_msgs::PoseStamped cur_pose;
-        double delta_t = (*truck_odom_time_)[point_id] - trajectory_start_time_;
-        cur_pose = truck_origin_path_->poses[point_id];
+        double delta_t = (*m_truck_odom_time_ptr)[point_id] - m_truck_traj_start_time;
+        cur_pose = m_truck_origin_path_ptr->poses[point_id];
         cur_pose.pose.position.x = getPointFromPolynomial('x', delta_t);
         cur_pose.pose.position.y = getPointFromPolynomial('y', delta_t);
-        truck_traj_path_->poses.push_back(cur_pose);
+        m_truck_traj_path_ptr->poses.push_back(cur_pose);
       }
 
-    uav_commander_.updateUavTruckRelPos();
-    uav_start_pos_ = uav_commander_.m_uav_truck_world_pos;
+    m_uav_commander.updateUavTruckRelPos();
+    m_uav_start_pos = m_uav_commander.m_uav_truck_world_pos;
 
-    int predict_number = int(visualization_predict_time_ / visualization_predict_time_unit_);
-    double delta_t_offset = (*truck_odom_time_)[estimating_odom_number_-1] - trajectory_start_time_;
-    geometry_msgs::PoseStamped last_pose = truck_origin_path_->poses[estimating_odom_number_-1];
+    int predict_number = int(m_truck_vis_predict_time / m_truck_vis_predict_time_unit);
+    double delta_t_offset = (*m_truck_odom_time_ptr)[m_n_truck_estimate_odom-1] - m_truck_traj_start_time;
+    geometry_msgs::PoseStamped last_pose = m_truck_origin_path_ptr->poses[m_n_truck_estimate_odom-1];
     for (int point_id = 0; point_id < predict_number; ++point_id)
       {
         geometry_msgs::PoseStamped cur_pose;
-        double delta_t = delta_t_offset + point_id * visualization_predict_time_unit_;
+        double delta_t = delta_t_offset + point_id * m_truck_vis_predict_time_unit;
         cur_pose = last_pose;
         cur_pose.pose.position.x = getPointFromPolynomial('x', delta_t);
         cur_pose.pose.position.y = getPointFromPolynomial('y', delta_t);
-        truck_traj_path_->poses.push_back(cur_pose);
+        m_truck_traj_path_ptr->poses.push_back(cur_pose);
         // Uav's predicted traj = offset + truck's predicted traj
-        cur_pose.pose.position.x += uav_start_pos_.getX();
-        cur_pose.pose.position.y += uav_start_pos_.getY();
-        cur_pose.pose.position.z += uav_start_pos_.getZ();
-        uav_des_traj_path_->poses.push_back(cur_pose);
+        cur_pose.pose.position.x += m_uav_start_pos.getX();
+        cur_pose.pose.position.y += m_uav_start_pos.getY();
+        cur_pose.pose.position.z += m_uav_start_pos.getZ();
+        m_uav_des_traj_path_ptr->poses.push_back(cur_pose);
       }
-    pub_truck_traj_path_.publish(*truck_traj_path_);
-    if (uav_state_ == 3)
-      pub_uav_des_traj_path_.publish(*uav_des_traj_path_);
+    m_pub_truck_traj_path.publish(*m_truck_traj_path_ptr);
+    if (m_uav_state == 3)
+      m_pub_uav_des_traj_path.publish(*m_uav_des_traj_path_ptr);
   }
 
   void TruckTrajectoryEstimator::markerInit(visualization_msgs::Marker &marker, char color)
@@ -340,12 +340,12 @@ namespace truck_trajectory_estimator
   double TruckTrajectoryEstimator::getPointFromPolynomial(char axis, double var_value)
   {
     double result = 0, temp = 1;
-    for (int i = 0; i < polynomial_order_; ++i)
+    for (int i = 0; i < m_truck_traj_order; ++i)
       {
         if (axis == 'x')
-          result += (*truck_traj_param_x_)[i] * temp;
+          result += (*m_truck_traj_param_x_ptr)[i] * temp;
         else if (axis == 'y')
-          result += (*truck_traj_param_y_)[i] * temp;
+          result += (*m_truck_traj_param_y_ptr)[i] * temp;
         temp *= var_value;
       }
     return result;
@@ -354,13 +354,13 @@ namespace truck_trajectory_estimator
 
   Vector3d TruckTrajectoryEstimator::nOrderPolynomial(int n, double t)
   {
-    double temp = 1, delta_t = t-estimating_start_time_;
+    double temp = 1, delta_t = t-m_truck_estimate_start_time;
     Vector3d result(0.0, 0.0, 0.0);
-    for (int i = n; i < polynomial_order_; ++i)
+    for (int i = n; i < m_truck_traj_order; ++i)
       {
         int factor = factorial(i, n);
-        result[0] += factor * (*truck_traj_param_x_)[i] * temp;
-        result[1] += factor * (*truck_traj_param_y_)[i] * temp;
+        result[0] += factor * (*m_truck_traj_param_x_ptr)[i] * temp;
+        result[1] += factor * (*m_truck_traj_param_y_ptr)[i] * temp;
         temp *= delta_t;
       }
     return result;
@@ -371,17 +371,17 @@ namespace truck_trajectory_estimator
     if (config.enable)
       {
         ROS_WARN("new config");
-        polynomial_order_ = config.polynomial_order;
-        derivation_order_ = config.derivation_order;
-        lambda_D_= config.lambda_D;
-        estimating_odom_number_ = config.estimating_odom_number;
-        traj_generate_freq_ = config.trajectory_generate_frequency;
-        smooth_forward_time_ = config.smooth_forward_time;
-        visualization_predict_time_ = config.visualization_predict_time;
-        uav_commander_.m_direct_pid_mode = config.direct_pid_mode;
-        uav_commander_.m_traj_track_p_gain = config.traj_track_p_param;
-        uav_commander_.m_traj_track_i_gain = config.traj_track_i_param;
-        uav_commander_.m_traj_track_d_gain = config.traj_track_d_param;
+        m_truck_traj_order = config.truck_traj_order;
+        m_truck_traj_dev_order = config.derivation_order;
+        m_truck_lambda_D= config.truck_lambda_D;
+        m_n_truck_estimate_odom = config.truck_estimate_odom_number;
+        m_truck_traj_generate_freq = config.truck_trajectory_generate_frequency;
+        m_truck_smooth_forward_time = config.truck_smooth_forward_time;
+        m_truck_vis_predict_time = config.truck_visualization_predict_time;
+        m_uav_commander.m_direct_pid_mode = config.direct_pid_mode;
+        m_uav_commander.m_traj_track_p_gain = config.traj_track_p_param;
+        m_uav_commander.m_traj_track_i_gain = config.traj_track_i_param;
+        m_uav_commander.m_traj_track_d_gain = config.traj_track_d_param;
       }
   }
 }

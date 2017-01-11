@@ -45,65 +45,69 @@ namespace truck_trajectory_estimator
   public:
     //TruckTrajectoryEstimator();
     //~TruckTrajectoryEstimator();
-    ros::NodeHandle nh_;
-    bool truck_odom_update_;
-    bool truck_odom_empty_flag_;
-    bool truck_odom_filled_flag_;
-    nav_msgs::Path *truck_traj_path_;
-    nav_msgs::Path *truck_origin_path_;
-    nav_msgs::Path *uav_des_traj_path_;
-    visualization_msgs::MarkerArray *truck_origin_markers_;
-    visualization_msgs::MarkerArray *truck_traj_markers_;
-    visualization_msgs::Marker truck_marker_;
+    ros::NodeHandle m_nh;
+    bool m_truck_odom_update;
+    bool m_truck_odom_empty_flag;
+    bool m_truck_odom_filled_flag;
+    nav_msgs::Path *m_truck_traj_path_ptr;
+    nav_msgs::Path *m_truck_origin_path_ptr;
+    nav_msgs::Path *m_uav_des_traj_path_ptr;
+    visualization_msgs::MarkerArray *m_truck_origin_markers_ptr;
+    visualization_msgs::MarkerArray *m_truck_traj_markers_ptr;
+    visualization_msgs::Marker m_truck_marker;
 
-    int polynomial_order_;
-    int derivation_order_;
-    int estimating_odom_number_;
-    int current_odom_number_;
-    int traj_generate_freq_;
-    double visualization_predict_time_;
-    double visualization_predict_time_unit_;
-    int new_traj_points_number_;
-    double lambda_D_;
-    double smooth_forward_time_;
-    VectorXd *truck_odom_x_;
-    VectorXd *truck_odom_y_;
-    VectorXd *truck_odom_time_;
-    VectorXd *truck_traj_param_x_;
-    VectorXd *truck_traj_param_y_;
-    double estimating_start_time_;
-    double trajectory_start_time_;
-    double estimating_end_time_;
+    int m_truck_traj_order;
+    int m_truck_traj_dev_order;
+    int m_n_truck_estimate_odom;
+    int m_n_current_odom;
+    int m_truck_traj_generate_freq;
+    double m_truck_vis_predict_time;
+    double m_truck_vis_predict_time_unit;
+    int m_n_truck_new_odom;
+    double m_truck_lambda_D;
+    double m_truck_smooth_forward_time;
+    VectorXd *m_truck_odom_x_ptr;
+    VectorXd *m_truck_odom_y_ptr;
+    VectorXd *m_truck_odom_time_ptr;
+    VectorXd *m_truck_traj_param_x_ptr;
+    VectorXd *m_truck_traj_param_y_ptr;
+    double m_truck_estimate_start_time;
+    double m_truck_traj_start_time;
+    double m_estimate_end_time;
+    VectorXd *m_uav_traj_param_x_ptr;
+    VectorXd *m_uav_traj_param_y_ptr;
 
-    std::string truck_odom_sub_topic_name_;
+    std::string m_truck_odom_sub_topic_name;
 
     /* uav command */
-    QuadrotorCommand uav_commander_;
-    int uav_state_; //0,not finish taking off; 1,pid tracking; 2,traj trakcing
-    tf::Vector3 uav_start_pos_;
+    QuadrotorCommand m_uav_commander;
+    int m_uav_state; //0,not finish taking off; 1,pid tracking; 2,traj trakcing
+    tf::Vector3 m_uav_start_pos;
 
     // Subscriber
-    ros::Subscriber sub_truck_odom_;
+    ros::Subscriber m_sub_truck_odom;
 
     // Publisher
-    ros::Publisher pub_truck_origin_path_;
-    ros::Publisher pub_truck_traj_path_;
-    ros::Publisher pub_uav_des_traj_path_;
-    ros::Publisher pub_truck_origin_markers_;
-    ros::Publisher pub_truck_traj_markers_;
+    ros::Publisher m_pub_truck_origin_path;
+    ros::Publisher m_pub_truck_traj_path;
+    ros::Publisher m_pub_uav_des_traj_path;
+    ros::Publisher m_pub_truck_origin_markers;
+    ros::Publisher m_pub_truck_traj_markers;
 
     // Configure
-    boost::shared_ptr<dynamic_reconfigure::Server<quadrotor_trajectory::TrajectoryEstimateConfig> > server_ptr_;
+    boost::shared_ptr<dynamic_reconfigure::Server<quadrotor_trajectory::TrajectoryEstimateConfig> > m_server_ptr;
     void traj_estimate_config_callback(quadrotor_trajectory::TrajectoryEstimateConfig &config, uint32_t level);
 
     //void onInit(ros::NodeHandle &nh, ros::NodeHandle &pnh);
     void onInit();
     void markerInit(visualization_msgs::Marker &marker, char color='r');
     void truckOdomCallback(const nav_msgs::OdometryConstPtr& truck_odom_msg);
-    // Estimate truck's path using QP
+    void pathEstimator();
+    void pathVisualization();
     void polynomialEstimation();
-    // Visualize truck and drone's trajectory
     void trajectoryVisualization();
+    // trajectory visualization based on same odom points
+    void trajectory_visualization_same_odompoints(int mode);
     int factorial(int n, int order);
     double getPointFromPolynomial(char axis, double var_value);
     Vector3d nOrderPolynomial(int n, double t);
