@@ -9,6 +9,7 @@
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Point.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
@@ -74,6 +75,7 @@ namespace truck_trajectory_estimator
     double m_truck_estimate_start_time;
     double m_truck_traj_start_time;
     double m_estimate_end_time;
+    double m_truck_traj_deviation_threshold; // If truck largely deviate trajectory, then recalculate its polynomial function
     VectorXd *m_uav_traj_param_x_ptr;
     VectorXd *m_uav_traj_param_y_ptr;
 
@@ -111,6 +113,7 @@ namespace truck_trajectory_estimator
     int factorial(int n, int order);
     double getPointFromPolynomial(char axis, double var_value);
     Vector3d nOrderPolynomial(int n, double t);
+    bool isTruckDeviateTrajectory(double threshold, geometry_msgs::Point truck_pos, double current_time);
   };
 }
 #endif

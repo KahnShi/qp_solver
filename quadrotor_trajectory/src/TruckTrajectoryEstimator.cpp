@@ -17,6 +17,7 @@ namespace truck_trajectory_estimator
     pnh.param("truck_visualization_predict_time", m_truck_vis_predict_time, 2.0);
     pnh.param("truck_vis_predict_time_unit", m_truck_vis_predict_time_unit, 0.2);
     pnh.param("truck_smooth_forward_time", m_truck_smooth_forward_time, 1.0);
+    pnh.param("truck_trajectory_deviation_threshold", m_truck_traj_deviation_threshold, 1.5);
     pnh.param("uav_odom_sub_topic_name", m_uav_commander.m_uav_odom_sub_topic_name, std::string("/ground_truth/state"));
     pnh.param("uav_cmd_pub_topic_name", m_uav_commander.m_uav_cmd_pub_topic_name, std::string("/cmd_vel"));
     pnh.param("uav_vel_upper_bound", m_uav_commander.m_uav_vel_ub, 10.0);
@@ -74,8 +75,8 @@ namespace truck_trajectory_estimator
   // 25 hz in simulation
   void TruckTrajectoryEstimator::truckOdomCallback(const nav_msgs::OdometryConstPtr& truck_odom_msg)
   {
-    ROS_INFO("Get Odom.");
-    std::cout << m_n_truck_new_odom << "\n";
+    //ROS_INFO("Get Odom.");
+    //std::cout << m_n_truck_new_odom << "\n";
     //uav command
     if (m_uav_state == 0)
       {
@@ -163,7 +164,7 @@ namespace truck_trajectory_estimator
         m_truck_origin_markers_ptr->markers[m_n_truck_estimate_odom-1] = m_truck_marker;
 
         ++m_n_truck_new_odom;
-        if (m_n_truck_new_odom >= m_truck_traj_generate_freq)
+        if (m_n_truck_new_odom >= m_truck_traj_generate_freq || isTruckDeviateTrajectory(m_truck_traj_deviation_threshold, truck_odom.pose.pose.position, (*m_truck_odom_time_ptr)[m_n_truck_estimate_odom-1]))
           {
             m_n_truck_new_odom = 0;
             delete m_truck_traj_path_ptr;
@@ -206,7 +207,7 @@ namespace truck_trajectory_estimator
     m_pub_truck_origin_path.publish(*m_truck_origin_path_ptr);
     m_pub_truck_origin_markers.publish(*m_truck_origin_markers_ptr);
 
-    ROS_INFO("Finish Odom.");
+    //ROS_INFO("Finish Odom.");
   }
 
   void TruckTrajectoryEstimator::polynomialEstimation()
@@ -389,5 +390,19 @@ namespace truck_trajectory_estimator
         m_uav_commander.m_traj_track_i_gain = config.traj_track_i_param;
         m_uav_commander.m_traj_track_d_gain = config.traj_track_d_param;
       }
+  }
+
+  bool TruckTrajectoryEstimator::isTruckDeviateTrajectory(double threshold, geometry_msgs::Point truck_pos, double current_time)
+  {
+    double delta_t = current_time-m_truck_traj_start_time;
+    double distance = pow(getPointFromPolynomial('x', delta_t)-truck_pos.x, 2) + pow(getPointFromPolynomial('y', delta_t)-truck_pos.y, 2);
+    if (distance > pow(threshold, 2))
+      {
+        ROS_WARN("Truck is deviate from predict trajectoy.");
+        std::cout << "Deviation is : " << sqrt(distance) << ", threshold is : " << threshold << "\n";
+        return true;
+      }
+    else
+      return false;
   }
 }
