@@ -18,6 +18,9 @@ namespace truck_trajectory_estimator
     pnh.param("truck_vis_predict_time_unit", m_truck_vis_predict_time_unit, 0.2);
     pnh.param("truck_smooth_forward_time", m_truck_smooth_forward_time, 1.0);
     pnh.param("truck_trajectory_deviation_threshold", m_truck_traj_deviation_threshold, 1.5);
+    pnh.param("truck_max_velocity", m_truck_max_vel, 4.5);
+    pnh.param("truck_max_acceleration", m_truck_max_acc, 1.5);
+
     pnh.param("uav_odom_sub_topic_name", m_uav_commander.m_uav_odom_sub_topic_name, std::string("/ground_truth/state"));
     pnh.param("uav_cmd_pub_topic_name", m_uav_commander.m_uav_cmd_pub_topic_name, std::string("/cmd_vel"));
     pnh.param("uav_vel_upper_bound", m_uav_commander.m_uav_vel_ub, 10.0);
@@ -257,10 +260,10 @@ namespace truck_trajectory_estimator
             mul *= cur_t;
             A(2*i, j) = j * mul;
           }
-        lb_A(2*i) = -5.5;
-        lb_A(2*i+1) = -1.5;
-        ub_A(2*i) = 5.5;
-        ub_A(2*i+1) = 1.5;
+        lb_A(2*i) = -m_truck_max_vel;
+        lb_A(2*i+1) = -m_truck_max_acc;
+        ub_A(2*i) = m_truck_max_vel;
+        ub_A(2*i+1) = m_truck_max_acc;
       }
 
     // Assign value for H matrix

@@ -76,6 +76,9 @@ namespace truck_trajectory_estimator
     double m_truck_traj_start_time;
     double m_estimate_end_time;
     double m_truck_traj_deviation_threshold; // If truck largely deviate trajectory, then recalculate its polynomial function
+    double m_truck_max_vel; // max velocity in one demension
+    double m_truck_max_acc; // max acceleration in one demension
+
     VectorXd *m_uav_traj_param_x_ptr;
     VectorXd *m_uav_traj_param_y_ptr;
 
