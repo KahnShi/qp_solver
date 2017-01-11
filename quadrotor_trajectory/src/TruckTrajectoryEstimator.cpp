@@ -238,13 +238,38 @@ namespace truck_trajectory_estimator
         g_y = g_y + (-2) * t_t * (*m_truck_odom_y_ptr)[point_index];
       }
 
+    // Add constraints
+    // Check velocity and acceleration in future 0~2 second, and every 0.2 second
+    int n_constraints = int(3.0/0.1);
+    MatrixXd A = MatrixXd::Zero(n_constraints*2, m_truck_traj_order);
+    VectorXd lb_A = VectorXd::Zero(n_constraints*2);
+    VectorXd ub_A = VectorXd::Zero(n_constraints*2);
+    for (int i = 0; i < n_constraints; ++i)
+      {
+        double cur_t = 0.2 * i;
+        double mul = cur_t;
+        A(2*i, 1) = 1;
+        A(2*i, 2) = 2*cur_t;
+        A(2*i+1, 2) = 2;
+        for (int j = 3; j < m_truck_traj_order; ++j)
+          {
+            A(2*i+1, j) = j * (j - 1) * mul;
+            mul *= cur_t;
+            A(2*i, j) = j * mul;
+          }
+        lb_A(2*i) = -5.5;
+        lb_A(2*i+1) = -1.5;
+        ub_A(2*i) = 5.5;
+        ub_A(2*i+1) = 1.5;
+      }
+
     // Assign value for H matrix
     H = 2 * T + m_truck_lambda_D * m_n_truck_estimate_odom * D;
 
     /* Setting up QProblemB object. */
 
-    QProblemB exampleQ_x( m_truck_traj_order );
-    QProblemB exampleQ_y( m_truck_traj_order );
+    QProblem exampleQ_x( m_truck_traj_order,0 );
+    QProblem exampleQ_y( m_truck_traj_order,0 );
 
     Options options;
     //options.enableFlippingBounds = BT_FALSE;
@@ -259,11 +284,11 @@ namespace truck_trajectory_estimator
     exampleQ_y.setOptions( options );
 
     int_t nWSR_x = 10;
-    exampleQ_x.init(H.data(),g_x.data(),NULL,NULL, nWSR_x,0 );
+    exampleQ_x.init(H.data(),g_x.data(),A.data(),NULL,NULL,lb_A.data(), ub_A.data(), nWSR_x,0 );
     exampleQ_x.getPrimalSolution(m_truck_traj_param_x_ptr->data());
 
     int_t nWSR_y = 10;
-    exampleQ_y.init(H.data(),g_y.data(),NULL,NULL, nWSR_y,0 );
+    exampleQ_y.init(H.data(),g_y.data(),A.data(),NULL,NULL,lb_A.data(), ub_A.data(), nWSR_y,0 );
     exampleQ_y.getPrimalSolution(m_truck_traj_param_y_ptr->data());
     //printf( " ];  objVal = %e\n\n", exampleQ.getObjVal() );
 
