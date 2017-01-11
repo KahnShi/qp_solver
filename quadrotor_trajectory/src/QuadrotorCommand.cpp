@@ -46,7 +46,7 @@ namespace quadrotor_command
         sleep(0.2);
         uav_cmd.linear.x = 0;
         uav_cmd.linear.y = 0;
-        uav_cmd.linear.z = 1;
+        uav_cmd.linear.z = 2;
         m_pub_uav_cmd.publish(uav_cmd);
         sleep(0.2);
         m_pub_uav_cmd.publish(uav_cmd);
@@ -99,7 +99,7 @@ namespace quadrotor_command
     uav_rot_mat.getRPY(uav_roll, uav_pitch, uav_yaw);
     tf::Matrix3x3 r_z;
     r_z.setRPY(0, 0, uav_yaw);
-    std::cout << "Yaw angle: " << uav_yaw / 3.14 * 180.0 << " deg\n";
+    //std::cout << "Yaw angle: " << uav_yaw / 3.14 * 180.0 << " deg\n";
     tf::Vector3 truck_uav_rel_uav_pos = r_z.inverse() * truck_uav_rel_world_pos;
 
     tf::Vector3 direct_p_term = truck_uav_rel_uav_pos * m_direct_p_gain;
@@ -118,8 +118,8 @@ namespace quadrotor_command
     if (m_direct_i_term_accumulation.getZ() > m_direct_i_term_max) m_direct_i_term_accumulation.setZ(m_direct_i_term_max);
     else if (m_direct_i_term_accumulation.getZ() < -m_direct_i_term_max) m_direct_i_term_accumulation.setZ(-m_direct_i_term_max);
 
-    std::cout << "P term: " << direct_p_term.getX()<<' ' << direct_p_term.getY() << "\n";
-    std::cout << "I term: " << m_direct_i_term_accumulation.getX()<<' ' << m_direct_i_term_accumulation.getY() << "\n";
+    //std::cout << "P term: " << direct_p_term.getX()<<' ' << direct_p_term.getY() << "\n";
+    //std::cout << "I term: " << m_direct_i_term_accumulation.getX()<<' ' << m_direct_i_term_accumulation.getY() << "\n";
     tf::Vector3 origin_cmd_vel = direct_p_term + m_direct_i_term_accumulation;
 
     // Currently only consider speed in x,y dim
@@ -139,8 +139,8 @@ namespace quadrotor_command
       }
     m_pub_uav_cmd.publish(uav_cmd);
 
-    std::cout << "Truck Uav dis: " << truck_uav_rel_uav_pos.getX() << ", " << truck_uav_rel_uav_pos.getY() << "\n";
-    std::cout << "Uav cmd vel: " << uav_cmd.linear.x << ", " << uav_cmd.linear.y << "\n\n";
+    //std::cout << "Truck Uav dis: " << truck_uav_rel_uav_pos.getX() << ", " << truck_uav_rel_uav_pos.getY() << "\n";
+    //std::cout << "Uav cmd vel: " << uav_cmd.linear.x << ", " << uav_cmd.linear.y << "\n\n";
   }
 
 

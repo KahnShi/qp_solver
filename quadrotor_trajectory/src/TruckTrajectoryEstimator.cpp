@@ -9,14 +9,14 @@ namespace truck_trajectory_estimator
     ros::NodeHandle pnh("~");
     /* ROS Node */
     pnh.param("truck_odom_sub_topic_name", m_truck_odom_sub_topic_name, std::string("/simulating_truck_odom"));
-    pnh.param("polynomial_order", m_truck_traj_order, 6);
-    pnh.param("derivation_order", m_truck_traj_dev_order, 2);
-    pnh.param("lambda_D", m_truck_lambda_D, 0.01);
-    pnh.param("estimating_odom_number", m_n_truck_estimate_odom, 40);
-    pnh.param("trajectory_generate_freqency", m_truck_traj_generate_freq, 60);
-    pnh.param("visualization_predict_time", m_truck_vis_predict_time, 2.0);
-    pnh.param("m_truck_vis_predict_time_unit", m_truck_vis_predict_time_unit, 0.2);
-    pnh.param("smooth_forward_time", m_truck_smooth_forward_time, 1.0);
+    pnh.param("truck_traj_polynomial_order", m_truck_traj_order, 6);
+    pnh.param("truck_traj_derivation_order", m_truck_traj_dev_order, 2);
+    pnh.param("truck_lambda_D", m_truck_lambda_D, 0.01);
+    pnh.param("truck_estimate_odom_number", m_n_truck_estimate_odom, 40);
+    pnh.param("truck_trajectory_generate_freqency", m_truck_traj_generate_freq, 60);
+    pnh.param("truck_visualization_predict_time", m_truck_vis_predict_time, 2.0);
+    pnh.param("truck_vis_predict_time_unit", m_truck_vis_predict_time_unit, 0.2);
+    pnh.param("truck_smooth_forward_time", m_truck_smooth_forward_time, 1.0);
     pnh.param("uav_odom_sub_topic_name", m_uav_commander.m_uav_odom_sub_topic_name, std::string("/ground_truth/state"));
     pnh.param("uav_cmd_pub_topic_name", m_uav_commander.m_uav_cmd_pub_topic_name, std::string("/cmd_vel"));
     pnh.param("uav_vel_upper_bound", m_uav_commander.m_uav_vel_ub, 10.0);
@@ -71,9 +71,11 @@ namespace truck_trajectory_estimator
 
   }
 
-
+  // 25 hz in simulation
   void TruckTrajectoryEstimator::truckOdomCallback(const nav_msgs::OdometryConstPtr& truck_odom_msg)
   {
+    ROS_INFO("Get Odom.");
+    std::cout << m_n_truck_new_odom << "\n";
     //uav command
     if (m_uav_state == 0)
       {
@@ -171,7 +173,9 @@ namespace truck_trajectory_estimator
             m_uav_des_traj_path_ptr = new nav_msgs::Path();
             m_uav_des_traj_path_ptr->header = m_truck_origin_path_ptr->header;
             m_truck_traj_start_time = m_truck_estimate_start_time;
+            ROS_INFO("Start truck traj polynomial estmate.");
             polynomialEstimation();
+            ROS_INFO("Finish truck traj polynomial estmate.");
             trajectoryVisualization();
           }
         else
@@ -201,6 +205,8 @@ namespace truck_trajectory_estimator
       }
     m_pub_truck_origin_path.publish(*m_truck_origin_path_ptr);
     m_pub_truck_origin_markers.publish(*m_truck_origin_markers_ptr);
+
+    ROS_INFO("Finish Odom.");
   }
 
   void TruckTrajectoryEstimator::polynomialEstimation()
