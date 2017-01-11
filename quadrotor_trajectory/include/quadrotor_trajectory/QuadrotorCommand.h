@@ -40,6 +40,7 @@ namespace quadrotor_command
     ros::NodeHandle m_nh;
     double m_uav_vel_ub;
     double m_uav_vel_lb;
+    double m_uav_vel_z;
     double m_uav_acc_ub;
     double m_uav_acc_lb;
     tf::Vector3 m_uav_world_pos;
@@ -50,6 +51,7 @@ namespace quadrotor_command
     int m_control_freq;
     int m_takeoff_flag; //0, not takeoff; 1, taking off; 2, took off
     double m_uav_initial_height;
+    nav_msgs::Odometry m_uav_odom;
 
     // pid
     bool m_direct_pid_mode;

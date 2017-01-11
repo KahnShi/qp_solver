@@ -78,9 +78,8 @@ namespace truck_trajectory_estimator
     double m_truck_traj_deviation_threshold; // If truck largely deviate trajectory, then recalculate its polynomial function
     double m_truck_max_vel; // max velocity in one demension
     double m_truck_max_acc; // max acceleration in one demension
-
-    VectorXd *m_uav_traj_param_x_ptr;
-    VectorXd *m_uav_traj_param_y_ptr;
+    nav_msgs::Odometry m_truck_odom;
+    double m_truck_cable_height; // height of truck's back cable, in gazebo it is 0.5 meter
 
     std::string m_truck_odom_sub_topic_name;
 
@@ -88,6 +87,12 @@ namespace truck_trajectory_estimator
     QuadrotorCommand m_uav_commander;
     int m_uav_state; //0,not finish taking off; 1,pid tracking; 2,traj trakcing
     tf::Vector3 m_uav_start_pos;
+    int m_uav_traj_order;
+    int m_uav_traj_dev_order;
+    VectorXd *m_uav_traj_param_x_ptr;
+    VectorXd *m_uav_traj_param_y_ptr;
+    double m_landing_time;
+    double m_landing_vel;
 
     // Subscriber
     ros::Subscriber m_sub_truck_odom;
@@ -109,13 +114,14 @@ namespace truck_trajectory_estimator
     void truckOdomCallback(const nav_msgs::OdometryConstPtr& truck_odom_msg);
     void pathEstimator();
     void pathVisualization();
-    void polynomialEstimation();
+    void truckTrajectoryEstimation();
+    void uavTrajectoryPlanning();
     void trajectoryVisualization();
     // trajectory visualization based on same odom points
     void trajectory_visualization_same_odompoints(int mode);
     int factorial(int n, int order);
     double getPointFromPolynomial(char axis, double var_value);
-    Vector3d nOrderPolynomial(int n, double t);
+    Vector3d nOrderTruckTrajectory(int n, double t);
     bool isTruckDeviateTrajectory(double threshold, geometry_msgs::Point truck_pos, double current_time);
   };
 }

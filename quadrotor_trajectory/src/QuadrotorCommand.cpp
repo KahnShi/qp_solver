@@ -27,6 +27,8 @@ namespace quadrotor_command
 
   void QuadrotorCommand::uavOdomCallback(const nav_msgs::OdometryConstPtr& uav_odom_msg)
   {
+    m_uav_odom = *uav_odom_msg;
+
     // 100 hz in simulation
     m_uav_world_pos.setValue(uav_odom_msg->pose.pose.position.x,
                              uav_odom_msg->pose.pose.position.y,
