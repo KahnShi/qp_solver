@@ -310,6 +310,33 @@ namespace truck_trajectory_estimator
     //   std::cout << truck_traj_param_x_->data()[i] << ", ";
     // printf("\n");
 
+    std::cout << "Truck trajectory estimation:\n\nStart:\n Matrix A: \n";
+    for (int i = 0; i < m_truck_traj_order; ++i){
+      std::cout << "l" << i << ": ";
+      for (int j = 0; j < m_truck_traj_order; ++j){
+        std::cout << H(i,j) << ' ';
+      }
+      std::cout << "\n";
+    }
+
+    std::cout << "\nMatrix A: \n";
+    for (int i = 0; i < n_constraints*2; ++i){
+      std::cout << "l" << i << ": ";
+      for (int j = 0; j < m_truck_traj_order; ++j){
+        std::cout << A(i,j) << ' ';
+      }
+      std::cout << "\n";
+    }
+    std::cout << "\nLower bound A: \n";
+    for (int i = 0; i < n_constraints*2; ++i){
+      std::cout << lb_A(i) << ' ';
+    }
+    std::cout << "\nUpper bound A: \n";
+    for (int i = 0; i < n_constraints*2; ++i){
+      std::cout << ub_A(i) << ' ';
+    }
+    std::cout << "\n\n";
+
   }
 
   void TruckTrajectoryEstimator::uavTrajectoryPlanning()
@@ -439,7 +466,7 @@ namespace truck_trajectory_estimator
     exampleQ_x.setOptions( options );
     exampleQ_y.setOptions( options );
 
-    std::cout << "\n\nStart:\n Matrix A: \n";
+    std::cout << "UAV trajectory estimation:\n\nStart:\n Matrix A: \n";
     for (int i = 0; i < m_uav_traj_order; ++i){
       std::cout << "l" << i << ": ";
       for (int j = 0; j < m_uav_traj_order; ++j){
@@ -464,6 +491,7 @@ namespace truck_trajectory_estimator
     for (int i = 0; i < 4+n_constraints*2; ++i){
       std::cout << ub_A_x(i) << ' ';
     }
+    std::cout << "\n\n";
 
     ROS_WARN("3");
     int_t nWSR_x = 10;
