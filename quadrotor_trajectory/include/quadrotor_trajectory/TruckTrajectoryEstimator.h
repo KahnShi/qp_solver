@@ -91,8 +91,8 @@ namespace truck_trajectory_estimator
     int m_uav_traj_dev_order;
     VectorXd *m_uav_traj_param_x_ptr;
     VectorXd *m_uav_traj_param_y_ptr;
-    double m_landing_time;
-    double m_landing_vel;
+    double m_uav_landing_time;
+    double m_uav_landing_vel;
 
     // Subscriber
     ros::Subscriber m_sub_truck_odom;
@@ -120,8 +120,9 @@ namespace truck_trajectory_estimator
     // trajectory visualization based on same odom points
     void trajectory_visualization_same_odompoints(int mode);
     int factorial(int n, int order);
-    double getPointFromPolynomial(char axis, double var_value);
+    double getPointFromTruckTrajectory(char axis, double var_value);
     Vector3d nOrderTruckTrajectory(int n, double t);
+    Vector3d nOrderUavTrajectory(int n, double t);
     bool isTruckDeviateTrajectory(double threshold, geometry_msgs::Point truck_pos, double current_time);
   };
 }
