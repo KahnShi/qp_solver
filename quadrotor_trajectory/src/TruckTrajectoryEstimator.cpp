@@ -234,7 +234,6 @@ namespace truck_trajectory_estimator
   void TruckTrajectoryEstimator::truckTrajectoryEstimation()
   {
     MatrixXd T = MatrixXd::Zero(m_truck_traj_order, m_truck_traj_order);
-    MatrixXd T_v = MatrixXd::Zero(m_truck_traj_order, m_truck_traj_order);
     MatrixXd D = MatrixXd::Zero(m_truck_traj_order, m_truck_traj_order);
     MatrixXd H = MatrixXd::Zero(m_truck_traj_order, m_truck_traj_order);
     VectorXd g_x = VectorXd::Zero(m_truck_traj_order);
@@ -243,15 +242,12 @@ namespace truck_trajectory_estimator
     for (int point_index = 0; point_index < m_n_truck_estimate_odom; ++point_index)
       {
         VectorXd t_t = VectorXd::Zero(m_truck_traj_order);
-        // t_t_v is velocity related
-        VectorXd t_t_v = VectorXd::Zero(m_truck_traj_order);
         //t_t_d is t_t after derivation_order operation
         VectorXd t_t_d = VectorXd::Zero(m_truck_traj_order);
         t_t[0] = 1;
         double mul_d = 1;
         for (int i = 1; i < m_truck_traj_order; ++i)
           {
-            t_t_v[i] = t_t[i-1] * i;
             t_t[i] = t_t[i-1] * ((*m_truck_odom_time_ptr)[point_index] - m_truck_estimate_start_time);
             if (i >= m_truck_traj_dev_order)
               {
@@ -260,10 +256,9 @@ namespace truck_trajectory_estimator
               }
           }
         T = T + t_t * t_t.transpose();
-        T_v = T_v + t_t_v * t_t_v.transpose();
         D = D + t_t_d * t_t_d.transpose();
-        g_x = g_x + (-2) * t_t * (*m_truck_pos_x_ptr)[point_index] + (-2) * t_t_v * (*m_truck_vel_x_ptr)[point_index];
-        g_y = g_y + (-2) * t_t * (*m_truck_pos_y_ptr)[point_index] + (-2) * t_t_v * (*m_truck_vel_y_ptr)[point_index];
+        g_x = g_x + (-2) * t_t * (*m_truck_pos_x_ptr)[point_index];
+        g_y = g_y + (-2) * t_t * (*m_truck_pos_y_ptr)[point_index];
       }
 
     // Add constraints
@@ -295,7 +290,7 @@ namespace truck_trajectory_estimator
       }
 
     // Assign value for H matrix
-    H = 2 * T + 2 * T_v + m_truck_lambda_D * m_n_truck_estimate_odom * D;
+    H = 2 * T + m_truck_lambda_D * m_n_truck_estimate_odom * D;
 
     /* Setting up QProblemB object. */
 
@@ -323,12 +318,18 @@ namespace truck_trajectory_estimator
     /* Print qp's paramater and result for truck trajectory estimation. */
     //printf( " ];  objVal = %e\n\n", exampleQ.getObjVal() );
 
-    // std::cout <<"[x]: ";
-    // for (int i = 0; i < m_truck_traj_order; ++i)
-    //   std::cout << m_truck_traj_param_x_ptr->data()[i] << ", ";
-    // printf("\n");
 
-    // std::cout << "Truck trajectory estimation:\n\nStart:\n Matrix H: \n";
+    std::cout << "Truck trajectory estimation:\n\n";
+    std::cout <<"[x]: ";
+    for (int i = 0; i < m_truck_traj_order; ++i)
+      std::cout << m_truck_traj_param_x_ptr->data()[i] << ", ";
+    printf("\n");
+    std::cout <<"[y]: ";
+    for (int i = 0; i < m_truck_traj_order; ++i)
+      std::cout << m_truck_traj_param_y_ptr->data()[i] << ", ";
+    printf("\n");
+
+    // std::cout << "Start:\n Matrix H: \n";
     // for (int i = 0; i < m_truck_traj_order; ++i){
     //   std::cout << "l" << i << ": ";
     //   for (int j = 0; j < m_truck_traj_order; ++j){
@@ -433,7 +434,7 @@ namespace truck_trajectory_estimator
       mul *= m_uav_landing_time;
     }
 
-    Vector3d land_pos = nOrderTruckTrajectory(0, m_uav_landing_time);
+    Vector3d land_pos = nOrderTruckTrajectory(0, m_uav_landing_time + m_truck_estimate_start_time);
     lb_A_x(2) = land_pos.x();
     ub_A_x(2) = land_pos.x();
     lb_A_y(2) = land_pos.y();
@@ -445,11 +446,16 @@ namespace truck_trajectory_estimator
       A_y(3, i) = mul * i;
       mul *= m_uav_landing_time;
     }
-    Vector3d land_vel = nOrderTruckTrajectory(1, m_uav_landing_time);
-    lb_A_x(3) = land_vel.x();
-    ub_A_x(3) = land_vel.x();
-    lb_A_y(3) = land_vel.y();
-    ub_A_y(3) = land_vel.y();
+    Vector3d truck_land_vel = nOrderTruckTrajectory(1, m_uav_landing_time + m_truck_estimate_start_time);
+    double truck_land_vel_abs = sqrt(pow(truck_land_vel.x(), 2) + pow(truck_land_vel.y(), 2));
+    Vector3d truck_init_vel = nOrderTruckTrajectory(1, 0 + m_truck_estimate_start_time);
+    double truck_init_vel_abs = sqrt(pow(truck_init_vel.x(), 2) + pow(truck_init_vel.y(), 2));
+    lb_A_x(3) = truck_init_vel_abs * truck_land_vel.x()/truck_land_vel_abs;
+    //lb_A_x(3) = truck_land_vel.x();
+    ub_A_x(3) = lb_A_x(3);
+    lb_A_y(3) = truck_init_vel_abs * truck_land_vel.y()/truck_land_vel_abs;
+    //lb_A_y(3) = truck_land_vel.y();
+    ub_A_y(3) = ub_A_y(3);
 
 
     std::cout << "##### Current uav position: " << m_uav_commander.m_uav_world_pos.x() << ", "
@@ -458,8 +464,9 @@ namespace truck_trajectory_estimator
               << m_truck_odom.pose.pose.position.y << "\n";
     std::cout << "##### Landing truck position: " << land_pos.x() << ", "
               << land_pos.y() << "\n";
-    std::cout << "##### Landing truck velocity: " << land_vel.x() << ", "
-              << land_vel.y() << "\n";
+    std::cout << "##### Truck init speed: " << truck_init_vel_abs << ", " << truck_init_vel.x() << ", " << truck_init_vel.y() << "\n";
+    std::cout << "##### Landing truck velocity: " << lb_A_x(3) << ", "
+              << lb_A_y(3) << "\n";
 
 
     ROS_WARN("1");
@@ -511,7 +518,7 @@ namespace truck_trajectory_estimator
     exampleQ_x.setOptions( options );
     exampleQ_y.setOptions( options );
 
-    std::cout << "UAV trajectory estimation:\n\nStart:\n Matrix A: \n";
+    std::cout << "UAV trajectory estimation:\n\nStart:\n Matrix H: \n";
     for (int i = 0; i < m_uav_traj_order; ++i){
       std::cout << "l" << i << ": ";
       for (int j = 0; j < m_uav_traj_order; ++j){
@@ -528,6 +535,7 @@ namespace truck_trajectory_estimator
       }
       std::cout << "\n";
     }
+
     std::cout << "\nLower bound A: \n";
     for (int i = 0; i < 4+n_constraints*2; ++i){
       std::cout << lb_A_x(i) << ' ';
@@ -548,12 +556,6 @@ namespace truck_trajectory_estimator
     exampleQ_x.getPrimalSolution(m_uav_traj_param_x_ptr->data());
     ROS_WARN("5");
 
-    //printf( "objVal = %e\n\n", exampleQ_x.getObjVal() );
-    std::cout <<"[x]: ";
-    for (int i = 0; i < m_uav_traj_order; ++i)
-      std::cout << (*m_uav_traj_param_x_ptr)[i] << ", ";
-    printf("\n");
-
     int_t nWSR_y = 100;
     MatrixXd A_y_1 = MatrixXd::Zero(m_uav_traj_order, 4+n_constraints*2);
     A_y_1 = A_y.transpose();
@@ -562,6 +564,10 @@ namespace truck_trajectory_estimator
     exampleQ_y.getPrimalSolution(m_uav_traj_param_y_ptr->data());
     ROS_WARN("7");
 
+    std::cout <<"[x]: ";
+    for (int i = 0; i < m_uav_traj_order; ++i)
+      std::cout << (*m_uav_traj_param_x_ptr)[i] << ", ";
+    printf("\n");
     printf( "objVal = %e\n\n", exampleQ_y.getObjVal() );
     std::cout <<"[y]: ";
     for (int i = 0; i < m_uav_traj_order; ++i)
@@ -675,7 +681,8 @@ namespace truck_trajectory_estimator
 
   Vector3d TruckTrajectoryEstimator::nOrderTruckTrajectory(int n, double t)
   {
-    double temp = 1, delta_t = t-m_truck_estimate_start_time;
+    double temp = 1, delta_t;
+    delta_t = t-m_truck_estimate_start_time;
     Vector3d result(0.0, 0.0, 0.0);
     for (int i = n; i < m_truck_traj_order; ++i)
       {

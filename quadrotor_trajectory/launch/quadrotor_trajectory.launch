@@ -19,7 +19,7 @@
     <param name="truck_visualization_predict_time"  value="6.0" />
     <param name="truck_smooth_forward_time"  value="0.0" />
 
-    <param name="uav_traj_polynomial_order"  value="8" />
+    <param name="uav_traj_polynomial_order"  value="10" />
     <param name="uav_traj_derivation_order"  value="4" />
     <param name="uav_vel_upper_bound"  value="7.0" />
     <param name="uav_vel_lower_bound"  value="-7.0" />
