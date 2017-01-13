@@ -64,6 +64,7 @@ namespace truck_trajectory_estimator
     int m_truck_traj_generate_freq;
     double m_truck_vis_predict_time;
     double m_truck_vis_predict_time_unit;
+    double m_truck_vis_preview_time;
     int m_n_truck_new_odom;
     double m_truck_lambda_D;
     double m_truck_smooth_forward_time;

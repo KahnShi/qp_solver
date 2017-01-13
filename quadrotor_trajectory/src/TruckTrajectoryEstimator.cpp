@@ -11,12 +11,13 @@ namespace truck_trajectory_estimator
     pnh.param("truck_odom_sub_topic_name", m_truck_odom_sub_topic_name, std::string("/simulating_truck_odom"));
     pnh.param("truck_traj_polynomial_order", m_truck_traj_order, 6);
     pnh.param("truck_traj_derivation_order", m_truck_traj_dev_order, 2);
-    pnh.param("truck_lambda_D", m_truck_lambda_D, 0.01);
+    pnh.param("truck_lambda_D", m_truck_lambda_D, 0.0);
     pnh.param("truck_estimate_odom_number", m_n_truck_estimate_odom, 40);
     pnh.param("truck_trajectory_generate_freqency", m_truck_traj_generate_freq, 60);
     pnh.param("truck_visualization_predict_time", m_truck_vis_predict_time, 2.0);
     pnh.param("truck_vis_predict_time_unit", m_truck_vis_predict_time_unit, 0.2);
-    pnh.param("truck_smooth_forward_time", m_truck_smooth_forward_time, 1.0);
+    pnh.param("truck_vis_preview_time", m_truck_vis_preview_time, 6.0);
+    pnh.param("truck_smooth_forward_time", m_truck_smooth_forward_time, 0.0);
     pnh.param("truck_trajectory_deviation_threshold", m_truck_traj_deviation_threshold, 1.5);
     pnh.param("truck_max_velocity", m_truck_max_vel, 4.5);
     pnh.param("truck_max_acceleration", m_truck_max_acc, 1.5);
@@ -234,13 +235,15 @@ namespace truck_trajectory_estimator
         //t_t_d is t_t after derivation_order operation
         VectorXd t_t_d = VectorXd::Zero(m_truck_traj_order);
         t_t[0] = 1;
-        t_t_d[m_truck_traj_dev_order] = 1;
+        double mul_d = 1;
         for (int i = 1; i < m_truck_traj_order; ++i)
           {
             t_t[i] = t_t[i-1] * ((*m_truck_odom_time_ptr)[point_index] - m_truck_estimate_start_time);
             if (i >= m_truck_traj_dev_order)
-              //t_t_d[i] = t_t[i-m_truck_traj_dev_order];
-              t_t_d[i] = t_t_d[i-1] * ((*m_truck_odom_time_ptr)[point_index] + m_truck_smooth_forward_time - m_truck_estimate_start_time);
+              {
+                t_t_d[i] = factorial(i, m_truck_traj_dev_order) * mul_d;
+                mul_d *= ((*m_truck_odom_time_ptr)[point_index] + m_truck_smooth_forward_time - m_truck_estimate_start_time);
+              }
           }
         T = T + t_t * t_t.transpose();
         D = D + t_t_d * t_t_d.transpose();
@@ -278,6 +281,7 @@ namespace truck_trajectory_estimator
 
     // Assign value for H matrix
     H = 2 * T + m_truck_lambda_D * m_n_truck_estimate_odom * D;
+    //H = D;
 
     /* Setting up QProblemB object. */
 
@@ -305,12 +309,12 @@ namespace truck_trajectory_estimator
     exampleQ_y.getPrimalSolution(m_truck_traj_param_y_ptr->data());
     //printf( " ];  objVal = %e\n\n", exampleQ.getObjVal() );
 
-    // std::cout <<"[x]: ";
-    // for (int i = 0; i < m_truck_traj_order; ++i)
-    //   std::cout << truck_traj_param_x_->data()[i] << ", ";
-    // printf("\n");
+    std::cout <<"[x]: ";
+    for (int i = 0; i < m_truck_traj_order; ++i)
+      std::cout << m_truck_traj_param_x_ptr->data()[i] << ", ";
+    printf("\n");
 
-    std::cout << "Truck trajectory estimation:\n\nStart:\n Matrix A: \n";
+    std::cout << "Truck trajectory estimation:\n\nStart:\n Matrix H: \n";
     for (int i = 0; i < m_truck_traj_order; ++i){
       std::cout << "l" << i << ": ";
       for (int j = 0; j < m_truck_traj_order; ++j){
@@ -541,10 +545,12 @@ namespace truck_trajectory_estimator
     //m_uav_start_pos = m_uav_commander.m_uav_truck_world_pos;
 
     int truck_predict_number = int(m_truck_vis_predict_time / m_truck_vis_predict_time_unit);
+    int truck_preview_number = int(m_truck_vis_preview_time / m_truck_vis_predict_time_unit);
     int uav_predict_number = int(m_uav_landing_time / m_truck_vis_predict_time_unit);
     double delta_t_offset = (*m_truck_odom_time_ptr)[m_n_truck_estimate_odom-1] - m_truck_traj_start_time;
     geometry_msgs::PoseStamped last_pose = m_truck_origin_path_ptr->poses[m_n_truck_estimate_odom-1];
-    for (int point_id = 0; point_id < truck_predict_number; ++point_id)
+    // Preview time to examine its result for old traj, predict time to estimate the future traj
+    for (int point_id = -truck_preview_number; point_id < truck_predict_number; ++point_id)
       {
         geometry_msgs::PoseStamped cur_pose;
         double delta_t = delta_t_offset + point_id * m_truck_vis_predict_time_unit;
