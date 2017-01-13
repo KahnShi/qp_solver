@@ -68,8 +68,10 @@ namespace truck_trajectory_estimator
     int m_n_truck_new_odom;
     double m_truck_lambda_D;
     double m_truck_smooth_forward_time;
-    VectorXd *m_truck_odom_x_ptr;
-    VectorXd *m_truck_odom_y_ptr;
+    VectorXd *m_truck_pos_x_ptr;
+    VectorXd *m_truck_pos_y_ptr;
+    VectorXd *m_truck_vel_x_ptr;
+    VectorXd *m_truck_vel_y_ptr;
     VectorXd *m_truck_odom_time_ptr;
     VectorXd *m_truck_traj_param_x_ptr;
     VectorXd *m_truck_traj_param_y_ptr;
