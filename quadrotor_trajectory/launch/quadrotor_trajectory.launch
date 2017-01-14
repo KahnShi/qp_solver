@@ -17,6 +17,7 @@
     <param name="truck_estimate_odom_number"  value="25" />
     <param name="truck_trajectory_generate_freqency"  value="25" />
     <param name="truck_visualization_predict_time"  value="6.0" />
+    <param name="truck_visualization_preview_time"  value="0.0" />
     <param name="truck_smooth_forward_time"  value="0.0" />
 
     <param name="uav_traj_polynomial_order"  value="10" />

@@ -16,7 +16,7 @@ namespace truck_trajectory_estimator
     pnh.param("truck_trajectory_generate_freqency", m_truck_traj_generate_freq, 60);
     pnh.param("truck_visualization_predict_time", m_truck_vis_predict_time, 2.0);
     pnh.param("truck_vis_predict_time_unit", m_truck_vis_predict_time_unit, 0.2);
-    pnh.param("truck_vis_preview_time", m_truck_vis_preview_time, 6.0);
+    pnh.param("truck_visualization_preview_time", m_truck_vis_preview_time, 2.0);
     pnh.param("truck_smooth_forward_time", m_truck_smooth_forward_time, 0.0);
     pnh.param("truck_trajectory_deviation_threshold", m_truck_traj_deviation_threshold, 1.5);
     pnh.param("truck_max_velocity", m_truck_max_vel, 4.5);
@@ -224,7 +224,7 @@ namespace truck_trajectory_estimator
           {
           }
       }
-    // Truck's trajectory is estimated after enough odom is got.
+    // Truck's trajectory is firstly estimated after enough odom is got.
     else
       {
         (*m_truck_odom_time_ptr)[m_n_current_odom] = m_truck_odom.header.stamp.toSec();
@@ -244,7 +244,12 @@ namespace truck_trajectory_estimator
             m_uav_des_traj_path_ptr = new nav_msgs::Path();
             m_uav_des_traj_path_ptr->header = m_truck_origin_path_ptr->header;
             truckTrajectoryEstimation();
-            uavTrajectoryPlanning();
+            m_uav_traj_planning_flag = uavTrajectoryPlanning();
+            if(m_uav_traj_planning_flag){
+              (*m_uav_prev_traj_param_x_ptr) = (*m_uav_traj_param_x_ptr);
+              (*m_uav_prev_traj_param_y_ptr) = (*m_uav_traj_param_y_ptr);
+              m_uav_prev_traj_start_time = m_truck_traj_start_time;
+            }
             trajectoryVisualization();
           }
       }
@@ -624,7 +629,7 @@ namespace truck_trajectory_estimator
     }
     std::cout << "\n\n";
 
-    int_t nWSR_x = 300;
+    int_t nWSR_x = 1000;
     real_t cpu_x = 10;
     //exampleQ_x.init(H.data(),g_x.data(),A_x.data(),NULL,NULL,lb_A_x.data(), ub_A_x.data(), nWSR_x,NULL );
     exampleQ_x.init(H_x_r, g_x_r, A_x_r, NULL, NULL, lb_A_x_r, ub_A_x_r, nWSR_x,NULL );
@@ -648,7 +653,7 @@ namespace truck_trajectory_estimator
 
     exampleQ_x.getPrimalSolution(m_uav_traj_param_x_ptr->data());
 
-    int_t nWSR_y = 300;
+    int_t nWSR_y = 1000;
     exampleQ_y.init(H_y_r, g_y_r, A_y_r, NULL, NULL, lb_A_y_r, ub_A_y_r, nWSR_y,NULL );
 
     if (!exampleQ_y.isSolved()){
@@ -679,7 +684,7 @@ namespace truck_trajectory_estimator
       std::cout << (*m_uav_traj_param_y_ptr)[i] << ", ";
     printf("\n\n");
 
-    if (abs((*m_uav_traj_param_x_ptr)[0] - lb_A_x_r[0]) > 3 || abs((*m_uav_traj_param_y_ptr)[0] - lb_A_y_r[0]) > 3)
+    if (abs((*m_uav_traj_param_x_ptr)[0] - lb_A_x_r[0]) > 2 || abs((*m_uav_traj_param_y_ptr)[0] - lb_A_y_r[0]) > 2)
       {
         ROS_WARN("PLANNING FAILED!!! Trajectory start point is too far away from init position.");
         return false;
