@@ -386,8 +386,9 @@ namespace truck_trajectory_estimator
     // calculate 4-th order snap, then square it, then integral it.
     VectorXd t_t_d = VectorXd::Zero(m_uav_traj_order);
     VectorXd t_t = VectorXd::Zero(m_uav_traj_order);
-    double mul_d = 1;
-    t_t[0] = 1;
+    double mul_d = 1.0;
+    t_t[0] = 1.0;
+    t_t_d[0] = 0.0;
     for (int i = 1; i < m_uav_traj_order; ++i)
       {
         t_t[i] = t_t[i-1] * m_uav_landing_time;
@@ -402,8 +403,10 @@ namespace truck_trajectory_estimator
       for (int col_index = m_uav_traj_dev_order; col_index < m_uav_traj_order; ++col_index)
         T(row_index, col_index) = T(row_index, col_index) / double(row_index+col_index-m_uav_traj_dev_order*2+1);
 
+
     // Add constraints
     int n_constraints = int(m_uav_landing_time/0.1);
+
     std::cout << "Constraints num: " << n_constraints  << "\n";
     MatrixXd A_x = MatrixXd::Zero(4+n_constraints*2, m_uav_traj_order);
     MatrixXd A_y = MatrixXd::Zero(4+n_constraints*2, m_uav_traj_order);
@@ -412,22 +415,33 @@ namespace truck_trajectory_estimator
     VectorXd lb_A_y = VectorXd::Zero(4+n_constraints*2);
     VectorXd ub_A_y = VectorXd::Zero(4+n_constraints*2);
 
+    for (int row_id = 0; row_id < 4+2*n_constraints; ++row_id){
+      lb_A_x(row_id) = 0.0; ub_A_x(row_id) = 0.0;
+      lb_A_y(row_id) = 0.0; ub_A_y(row_id) = 0.0;
+      for (int col_id = 0; col_id < m_uav_traj_order; ++col_id){
+        A_x(row_id, col_id) = 0.0;
+        A_y(row_id, col_id) = 0.0;
+      }
+    }
+
+    ROS_WARN("0.2");
+
     // Init pos, vel; final pos, vel
-    A_x(0, 0) = 1;
+    A_x(0, 0) = 1.0;
     lb_A_x(0) = m_uav_commander.m_uav_world_pos.x();
-    ub_A_x(0) = m_uav_commander.m_uav_world_pos.x();
-    A_y(0, 0) = 1;
+    ub_A_x(0) = lb_A_x(0);
+    A_y(0, 0) = 1.0;
     lb_A_y(0) = m_uav_commander.m_uav_world_pos.y();
-    ub_A_y(0) = m_uav_commander.m_uav_world_pos.y();
+    ub_A_y(0) = lb_A_y(0);
 
-    A_x(1, 1) = 1;
+    A_x(1, 1) = 1.0;
     lb_A_x(1) = m_uav_commander.m_uav_world_vel.x();
-    ub_A_x(1) = m_uav_commander.m_uav_world_vel.x();
-    A_y(1, 1) = 1;
+    ub_A_x(1) = lb_A_x(1);
+    A_y(1, 1) = 1.0;
     lb_A_y(1) = m_uav_commander.m_uav_world_vel.y();
-    ub_A_y(1) = m_uav_commander.m_uav_world_vel.y();
+    ub_A_y(1) = lb_A_y(1);
 
-    double mul = 1;
+    double mul = 1.0;
     for (int i = 0; i < m_uav_traj_order; ++i){
       A_x(2, i) = mul;
       A_y(2, i) = mul;
@@ -436,11 +450,11 @@ namespace truck_trajectory_estimator
 
     Vector3d land_pos = nOrderTruckTrajectory(0, m_uav_landing_time + m_truck_estimate_start_time);
     lb_A_x(2) = land_pos.x();
-    ub_A_x(2) = land_pos.x();
+    ub_A_x(2) = lb_A_x(2);
     lb_A_y(2) = land_pos.y();
-    ub_A_y(2) = land_pos.y();
+    ub_A_y(2) = lb_A_y(2);
 
-    mul = 1;
+    mul = 1.0;
     for (int i = 1; i < m_uav_traj_order; ++i){
       A_x(3, i) = mul * i;
       A_y(3, i) = mul * i;
@@ -455,7 +469,7 @@ namespace truck_trajectory_estimator
     ub_A_x(3) = lb_A_x(3);
     lb_A_y(3) = truck_init_vel_abs * truck_land_vel.y()/truck_land_vel_abs;
     //lb_A_y(3) = truck_land_vel.y();
-    ub_A_y(3) = ub_A_y(3);
+    ub_A_y(3) = lb_A_y(3);
 
 
     std::cout << "##### Current uav position: " << m_uav_commander.m_uav_world_pos.x() << ", "
@@ -468,9 +482,6 @@ namespace truck_trajectory_estimator
     std::cout << "##### Landing truck velocity: " << lb_A_x(3) << ", "
               << lb_A_y(3) << "\n";
 
-
-    ROS_WARN("1");
-
     for (int i = 0; i < n_constraints; ++i)
       {
         /*
@@ -479,9 +490,9 @@ namespace truck_trajectory_estimator
           // For efficiency, in order to avoid multiple calculation of cur_t*cur_t, use the following iterative way.
          */
         double cur_t = 0.1 * i;
-        double mul = 1;
-        A_x(2*i+4, 1) = 1;
-        A_y(2*i+4, 1) = 1;
+        double mul = 1.0;
+        A_x(2*i+4, 1) = 1.0;
+        A_y(2*i+4, 1) = 1.0;
         for (int j = 2; j < m_uav_traj_order; ++j)
           {
             A_x(2*i+5, j) = j * (j - 1) * mul;
@@ -500,66 +511,81 @@ namespace truck_trajectory_estimator
         ub_A_y(2*i+5) = m_uav_commander.m_uav_acc_ub;
       }
 
-    ROS_WARN("2");
-
     // Assign value for H matrix
     H = T;
 
+    ROS_WARN("1");
     /* Setting up QProblemB object. */
 
-    SQProblem exampleQ_x( m_uav_traj_order,0, HST_SEMIDEF );
-    SQProblem exampleQ_y( m_uav_traj_order,0,HST_SEMIDEF );
+    SQProblem exampleQ_x( m_uav_traj_order,4+2*n_constraints, HST_SEMIDEF );
+    SQProblem exampleQ_y( m_uav_traj_order,4+2*n_constraints,HST_SEMIDEF );
+
+    ROS_WARN("2");
 
     Options options;
     options.enableRegularisation = BT_TRUE;
-    options.enableFlippingBounds = BT_TRUE;
-    options.enableFarBounds = BT_TRUE;
+    //options.enableFlippingBounds = BT_TRUE;
+    //options.enableFarBounds = BT_TRUE;
 
     exampleQ_x.setOptions( options );
     exampleQ_y.setOptions( options );
 
     std::cout << "UAV trajectory estimation:\n\nStart:\n Matrix H: \n";
     for (int i = 0; i < m_uav_traj_order; ++i){
-      std::cout << "l" << i << ": ";
+      //std::cout << "l" << i << ": ";
       for (int j = 0; j < m_uav_traj_order; ++j){
-        std::cout << H(i,j) << ' ';
+        std::cout << H(i,j) << ", ";
       }
       std::cout << "\n";
     }
 
     std::cout << "\nMatrix A: \n";
     for (int i = 0; i < 4+n_constraints*2; ++i){
-      std::cout << "l" << i << ": ";
+      //std::cout << "l" << i << ": ";
       for (int j = 0; j < m_uav_traj_order; ++j){
-        std::cout << A_x(i,j) << ' ';
+        std::cout << A_x(i,j) << ", ";
       }
       std::cout << "\n";
     }
 
-    std::cout << "\nLower bound A: \n";
-    for (int i = 0; i < 4+n_constraints*2; ++i){
-      std::cout << lb_A_x(i) << ' ';
+    std::cout << "\ng_x: \n";
+    for (int i = 0; i < m_uav_traj_order; ++i){
+      std::cout << g_x(i) << ", ";
     }
-    std::cout << "\nUpper bound A: \n";
+    std::cout << "\ng_y: \n";
+    for (int i = 0; i < m_uav_traj_order; ++i){
+      std::cout << g_y(i) << ", ";
+    }
+
+    std::cout << "\nLower bound A_x: \n";
     for (int i = 0; i < 4+n_constraints*2; ++i){
-      std::cout << ub_A_x(i) << ' ';
+      std::cout << lb_A_x(i) << ", ";
+    }
+    std::cout << "\nUpper bound A_x: \n";
+    for (int i = 0; i < 4+n_constraints*2; ++i){
+      std::cout << ub_A_x(i) << ", ";
+    }
+
+    std::cout << "\n\nLower bound A_y: \n";
+    for (int i = 0; i < 4+n_constraints*2; ++i){
+      std::cout << lb_A_y(i) << ", ";
+    }
+    std::cout << "\nUpper bound A_y: \n";
+    for (int i = 0; i < 4+n_constraints*2; ++i){
+      std::cout << ub_A_y(i) << ", ";
     }
     std::cout << "\n\n";
 
     ROS_WARN("3");
     int_t nWSR_x = 100;
     real_t cpu_x = 10;
-    MatrixXd A_x_1 = MatrixXd::Zero(m_uav_traj_order,4+n_constraints*2);
-    A_x_1 = A_x.transpose();
-    exampleQ_x.init(H.data(),g_x.data(),A_x.data(),NULL,NULL,lb_A_x.data(), ub_A_x.data(), nWSR_x,0 );
+    exampleQ_x.init(H.data(),g_x.data(),A_x.transpose().data(),NULL,NULL,lb_A_x.data(), ub_A_x.data(), nWSR_x,NULL );
     ROS_WARN("4");
     exampleQ_x.getPrimalSolution(m_uav_traj_param_x_ptr->data());
     ROS_WARN("5");
 
     int_t nWSR_y = 100;
-    MatrixXd A_y_1 = MatrixXd::Zero(m_uav_traj_order, 4+n_constraints*2);
-    A_y_1 = A_y.transpose();
-    exampleQ_y.init(H.data(),g_y.data(),A_y.data(),NULL,NULL,lb_A_y.data(), ub_A_y.data(), nWSR_y,0 );
+    exampleQ_y.init(H.data(),g_y.data(),A_y.transpose().data(),NULL,NULL,lb_A_y.data(), ub_A_y.data(), nWSR_y,NULL );
     ROS_WARN("6");
     exampleQ_y.getPrimalSolution(m_uav_traj_param_y_ptr->data());
     ROS_WARN("7");
