@@ -65,6 +65,10 @@ namespace truck_trajectory_estimator
     m_truck_traj_param_y_ptr = new VectorXd(m_truck_traj_order);
     m_uav_traj_param_x_ptr = new VectorXd(m_uav_traj_order);
     m_uav_traj_param_y_ptr = new VectorXd(m_uav_traj_order);
+    m_uav_prev_traj_param_x_ptr = new VectorXd(m_uav_traj_order);
+    m_uav_prev_traj_param_y_ptr = new VectorXd(m_uav_traj_order);
+    m_uav_prev_traj_start_time = -1;
+    m_uav_traj_planning_flag = false;
 
     // init for uav command
     m_uav_commander.m_truck_odom_sub_topic_name = m_truck_odom_sub_topic_name;
@@ -119,17 +123,22 @@ namespace truck_trajectory_estimator
       }
     if (m_uav_state == 3)
       {
-        // Direct pid control
-        if (m_uav_commander.m_direct_pid_mode)
+        if (!m_uav_traj_planning_flag){
           m_uav_commander.directPidTracking();
-        // Trajectory tracking control
-        else
-          {
-            double current_time = truck_odom_msg->header.stamp.toSec();
-            Vector3d uav_des_pos = nOrderTruckTrajectory(0, current_time) + Vector3d(m_uav_start_pos.getX(), m_uav_start_pos.getY(), m_uav_start_pos.getZ());
-            Vector3d uav_des_vel = nOrderTruckTrajectory(1, current_time);
-            m_uav_commander.trajectoryTracking(uav_des_pos, uav_des_vel);
-          }
+        }
+        else{
+          // Direct pid control
+          if (m_uav_commander.m_direct_pid_mode)
+            m_uav_commander.directPidTracking();
+          // Trajectory tracking control
+          else
+            {
+              double current_time = truck_odom_msg->header.stamp.toSec();
+              Vector3d uav_des_pos = nOrderTruckTrajectory(0, current_time) + Vector3d(m_uav_start_pos.getX(), m_uav_start_pos.getY(), m_uav_start_pos.getZ());
+              Vector3d uav_des_vel = nOrderTruckTrajectory(1, current_time);
+              m_uav_commander.trajectoryTracking(uav_des_pos, uav_des_vel);
+            }
+        }
       }
 
     geometry_msgs::PoseStamped cur_truck_pose_stamped;
@@ -193,7 +202,21 @@ namespace truck_trajectory_estimator
             m_truck_traj_start_time = m_truck_estimate_start_time;
             ROS_INFO("Start truck traj polynomial estmate.");
             truckTrajectoryEstimation();
-            uavTrajectoryPlanning();
+            m_uav_traj_planning_flag = uavTrajectoryPlanning();
+            if (!m_uav_traj_planning_flag){
+              // if prev traj is not too old, use it.
+              // Otherwise, do not use, but choose to directly pid follow.
+              if (m_truck_traj_start_time - m_uav_prev_traj_start_time < 6){
+                m_uav_traj_planning_flag = true;
+                (*m_uav_traj_param_x_ptr) = (*m_uav_prev_traj_param_x_ptr);
+                (*m_uav_traj_param_y_ptr) = (*m_uav_prev_traj_param_y_ptr);
+              }
+            }
+            else{
+                (*m_uav_prev_traj_param_x_ptr) = (*m_uav_traj_param_x_ptr);
+                (*m_uav_prev_traj_param_y_ptr) = (*m_uav_traj_param_y_ptr);
+                m_uav_prev_traj_start_time = m_truck_traj_start_time;
+            }
             ROS_INFO("Finish truck traj polynomial estmate.");
             trajectoryVisualization();
           }
@@ -303,9 +326,9 @@ namespace truck_trajectory_estimator
     // options.numRefinementSteps = 1;
     // options.enableCholeskyRefactorisation = 1;
     // options.enableEqualities = BT_TRUE;
-    // options.printLevel = PL_LOW;
-    //exampleQ_x.setOptions( options );
-    //exampleQ_y.setOptions( options );
+    options.printLevel = PL_LOW;
+    exampleQ_x.setOptions( options );
+    exampleQ_y.setOptions( options );
 
     int_t nWSR_x = 30;
     exampleQ_x.init(H.data(),g_x.data(),A.data(),NULL,NULL,lb_A.data(), ub_A.data(), nWSR_x,0 );
@@ -367,9 +390,8 @@ namespace truck_trajectory_estimator
 
   }
 
-  void TruckTrajectoryEstimator::uavTrajectoryPlanning()
+  bool TruckTrajectoryEstimator::uavTrajectoryPlanning()
   {
-    ROS_WARN("0");
     MatrixXd T = MatrixXd::Zero(m_uav_traj_order, m_uav_traj_order);
     MatrixXd D = MatrixXd::Zero(m_uav_traj_order, m_uav_traj_order);
     MatrixXd H = MatrixXd::Zero(m_uav_traj_order, m_uav_traj_order);
@@ -438,7 +460,6 @@ namespace truck_trajectory_estimator
     real_t *ub_A_y_r = new real_t[n_constraints];
     for (int i = 0; i < n_constraints; ++i) ub_A_y_r[i] = 0.0;
 
-    ROS_WARN("0.2");
 
     // Init pos, vel; final pos, vel
     A_x_r[0] = 1.0;
@@ -529,19 +550,17 @@ namespace truck_trajectory_estimator
     // Assign value for H matrix
     H = T;
 
-    ROS_WARN("1");
     /* Setting up QProblemB object. */
 
-    SQProblem exampleQ_x( m_uav_traj_order,n_constraints, HST_SEMIDEF);//+2*n_constraints, HST_SEMIDEF );
-    SQProblem exampleQ_y( m_uav_traj_order,n_constraints, HST_SEMIDEF);//+2*n_constraints,HST_SEMIDEF );
-
-    ROS_WARN("2");
+    SQProblem exampleQ_x( m_uav_traj_order,n_constraints, HST_SEMIDEF);
+    SQProblem exampleQ_y( m_uav_traj_order,n_constraints, HST_SEMIDEF);
 
     Options options;
     options.enableRegularisation = BT_TRUE;
     options.enableNZCTests = BT_TRUE;
     options.enableFlippingBounds = BT_TRUE;
     options.enableFarBounds = BT_TRUE;
+    options.printLevel = PL_LOW;
 
     exampleQ_x.setOptions( options );
     exampleQ_y.setOptions( options );
@@ -556,7 +575,7 @@ namespace truck_trajectory_estimator
       }
     }
 
-    std::cout << "UAV trajectory estimation:\n\nStart:\n";
+    std::cout << "UAV trajectory estimation:\n";
     // std::cout << "Matrix H: \n";
     // for (int i = 0; i < m_uav_traj_order; ++i){
     //   //std::cout << "l" << i << ": ";
@@ -587,86 +606,86 @@ namespace truck_trajectory_estimator
     // }
 
     std::cout << "\nLower bound A_x: \n";
-    for (int i = 0; i < n_constraints; ++i){
+    for (int i = 0; i < 4; ++i){
       std::cout << lb_A_x_r[i] << ", ";
     }
     std::cout << "\nUpper bound A_x: \n";
-    for (int i = 0; i < n_constraints; ++i){
+    for (int i = 0; i < 4; ++i){
       std::cout << ub_A_x_r[i] << ", ";
     }
 
     std::cout << "\n\nLower bound A_y: \n";
-    for (int i = 0; i < n_constraints; ++i){
+    for (int i = 0; i < 4; ++i){
       std::cout << lb_A_y_r[i] << ", ";
     }
     std::cout << "\nUpper bound A_y: \n";
-    for (int i = 0; i < n_constraints; ++i){
+    for (int i = 0; i < 4; ++i){
       std::cout << ub_A_y_r[i] << ", ";
     }
     std::cout << "\n\n";
 
-    ROS_WARN("3");
     int_t nWSR_x = 300;
     real_t cpu_x = 10;
     //exampleQ_x.init(H.data(),g_x.data(),A_x.data(),NULL,NULL,lb_A_x.data(), ub_A_x.data(), nWSR_x,NULL );
     exampleQ_x.init(H_x_r, g_x_r, A_x_r, NULL, NULL, lb_A_x_r, ub_A_x_r, nWSR_x,NULL );
 
     if (!exampleQ_x.isSolved()){
-      ROS_WARN("problem x is not solved!!!!");
+      std::cout << "problem x is not solved!!!!\n";
       //return;
     }
     if (!exampleQ_x.isInitialised()){
-      ROS_WARN("problem x is not initialized!!!!");
+      std::cout << "problem x is not initialized!!!!\n";
       //return;
     }
     if (exampleQ_x.isInfeasible()){
-      ROS_WARN("problem x is Infeasible!!!!");
+      std::cout << "problem x is Infeasible!!!!\n";
       //return;
     }
     if (exampleQ_x.isUnbounded()){
-      ROS_WARN("problem x is Unbounded(!!!!");
+      std::cout << "problem x is Unbounded(!!!!\n";
       //return;
     }
 
-    ROS_WARN("4");
     exampleQ_x.getPrimalSolution(m_uav_traj_param_x_ptr->data());
-    ROS_WARN("5");
 
     int_t nWSR_y = 300;
-    //exampleQ_y.init(H.data(),g_y.data(),A_y.data(),NULL,NULL,lb_A_y.data(), ub_A_y.data(), nWSR_y,NULL );
     exampleQ_y.init(H_y_r, g_y_r, A_y_r, NULL, NULL, lb_A_y_r, ub_A_y_r, nWSR_y,NULL );
 
     if (!exampleQ_y.isSolved()){
-      ROS_WARN("problem y is not solved!!!!");
+      std::cout << "problem y is not solved!!!!\n";
       //return;
     }
     if (!exampleQ_y.isInitialised()){
-      ROS_WARN("problem y is not initialized!!!!");
+      std::cout << "problem y is not initialized!!!!\n";
       //return;
     }
     if (exampleQ_y.isInfeasible()){
-      ROS_WARN("problem y is Infeasible!!!!");
+      std::cout << "problem y is Infeasible!!!!\n";
       //return;
     }
     if (exampleQ_y.isUnbounded()){
-      ROS_WARN("problem y is Unbounded(!!!!");
+      std::cout << "problem y is Unbounded(!!!!\n";
       //return;
     }
 
-    ROS_WARN("6");
     exampleQ_y.getPrimalSolution(m_uav_traj_param_y_ptr->data());
-    ROS_WARN("7");
 
     std::cout <<"[x]: ";
     for (int i = 0; i < m_uav_traj_order; ++i)
       std::cout << (*m_uav_traj_param_x_ptr)[i] << ", ";
     printf("\n");
-    printf( "objVal = %e\n\n", exampleQ_y.getObjVal() );
     std::cout <<"[y]: ";
     for (int i = 0; i < m_uav_traj_order; ++i)
       std::cout << (*m_uav_traj_param_y_ptr)[i] << ", ";
     printf("\n\n");
 
+    if (abs((*m_uav_traj_param_x_ptr)[0] - lb_A_x_r[0]) > 3 || abs((*m_uav_traj_param_y_ptr)[0] - lb_A_y_r[0]) > 3)
+      {
+        ROS_WARN("PLANNING FAILED!!! Trajectory start point is too far away from init position.");
+        return false;
+      }
+
+    return true;
   }
 
 
@@ -719,7 +738,6 @@ namespace truck_trajectory_estimator
         m_uav_des_traj_path_ptr->poses.push_back(cur_pose);
       }
     if (m_uav_state >= 2){
-      ROS_INFO("PUBLISH UAV TRAJ");
       m_pub_uav_des_traj_path.publish(*m_uav_des_traj_path_ptr);
     }
   }

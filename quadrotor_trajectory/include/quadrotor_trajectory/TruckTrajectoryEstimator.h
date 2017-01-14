@@ -94,6 +94,10 @@ namespace truck_trajectory_estimator
     int m_uav_traj_dev_order;
     VectorXd *m_uav_traj_param_x_ptr;
     VectorXd *m_uav_traj_param_y_ptr;
+    VectorXd *m_uav_prev_traj_param_x_ptr;
+    VectorXd *m_uav_prev_traj_param_y_ptr;
+    double m_uav_prev_traj_start_time;
+    bool m_uav_traj_planning_flag;
     double m_uav_landing_time;
     double m_uav_landing_vel;
 
@@ -118,7 +122,7 @@ namespace truck_trajectory_estimator
     void pathEstimator();
     void pathVisualization();
     void truckTrajectoryEstimation();
-    void uavTrajectoryPlanning();
+    bool uavTrajectoryPlanning();
     void trajectoryVisualization();
     // trajectory visualization based on same odom points
     void trajectory_visualization_same_odompoints(int mode);
