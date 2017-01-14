@@ -505,11 +505,6 @@ namespace truck_trajectory_estimator
       mul *= m_uav_landing_time;
     }
 
-    Vector3d land_pos = nOrderTruckTrajectory(0, m_uav_landing_time + m_truck_estimate_start_time);
-    lb_A_x_r[2] = land_pos.x();
-    ub_A_x_r[2] = lb_A_x_r[2];
-    lb_A_y_r[2] = land_pos.y();
-    ub_A_y_r[2] = lb_A_y_r[2];
 
     mul = 1.0;
     for (int i = 1; i < m_uav_traj_order; ++i){
@@ -527,6 +522,14 @@ namespace truck_trajectory_estimator
     lb_A_y_r[3] = truck_init_vel_abs * truck_land_vel.y()/truck_land_vel_abs;
     //lb_A_y(3) = truck_land_vel.y();
     ub_A_y_r[3] = lb_A_y_r[3];
+
+    Vector3d land_pos = nOrderTruckTrajectory(0, m_uav_landing_time + m_truck_estimate_start_time);
+    double truck_ang;
+    truck_ang = atan2(lb_A_y_r[3], lb_A_x_r[3]);
+    lb_A_x_r[2] = land_pos.x() + 0.5*cos(truck_ang);
+    ub_A_x_r[2] = lb_A_x_r[2];
+    lb_A_y_r[2] = land_pos.y() + 0.5*sin(truck_ang);
+    ub_A_y_r[2] = lb_A_y_r[2];
 
 
     std::cout << "##### Current uav position: " << m_uav_commander.m_uav_world_pos.x() << ", "
