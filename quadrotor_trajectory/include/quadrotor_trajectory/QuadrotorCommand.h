@@ -45,6 +45,7 @@ namespace quadrotor_command
     double m_uav_acc_lb;
     tf::Vector3 m_uav_world_pos;
     tf::Vector3 m_uav_world_vel;
+    tf::Vector3 m_uav_world_ang_vel;
     tf::Vector3 m_truck_world_pos;
     tf::Vector3 m_uav_truck_world_pos;
     tf::Quaternion m_uav_q;
@@ -52,6 +53,10 @@ namespace quadrotor_command
     int m_takeoff_flag; //0, not takeoff; 1, taking off; 2, took off
     double m_uav_initial_height;
     nav_msgs::Odometry m_uav_odom;
+    geometry_msgs::Twist m_uav_cmd;
+    geometry_msgs::Twist m_uav_pid_cmd;
+
+    bool m_landing_mode;
 
     // pid
     bool m_direct_pid_mode;
@@ -68,6 +73,8 @@ namespace quadrotor_command
     double m_traj_track_p_term_max;
     double m_traj_track_i_term_max;
     double m_traj_track_d_term_max;
+
+    double m_uav_yaw_i_term_accumulation;
 
     //test
     int m_move_state;
@@ -95,7 +102,8 @@ namespace quadrotor_command
     void uavOdomCallback(const nav_msgs::OdometryConstPtr& uav_odom_msg);
     bool isUavTruckNear(double threshold);
     void updateUavTruckRelPos();
-    void directPidTracking();
+    void directPidTracking(int mode); // 1, directly publish cmd msg; 0, calculate but not publish
+    void trajectoryTracking_old(Vector3d uav_des_pos, Vector3d uav_des_vel);
     void trajectoryTracking(Vector3d uav_des_pos, Vector3d uav_des_vel);
   };
 }

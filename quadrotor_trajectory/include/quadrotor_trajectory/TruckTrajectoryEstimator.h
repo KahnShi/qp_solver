@@ -89,7 +89,6 @@ namespace truck_trajectory_estimator
     /* uav command */
     QuadrotorCommand m_uav_commander;
     int m_uav_state; //0,not finish taking off; 1,pid tracking; 2,traj trakcing
-    tf::Vector3 m_uav_start_pos;
     int m_uav_traj_order;
     int m_uav_traj_dev_order;
     VectorXd *m_uav_traj_param_x_ptr;
@@ -100,6 +99,8 @@ namespace truck_trajectory_estimator
     bool m_uav_traj_planning_flag;
     double m_uav_landing_time;
     double m_uav_landing_vel;
+    // count for times when uav is state 2
+    int m_uav_state2_cnt;
 
     // Subscriber
     ros::Subscriber m_sub_truck_odom;
