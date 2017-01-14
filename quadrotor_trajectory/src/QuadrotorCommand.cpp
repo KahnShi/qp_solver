@@ -14,6 +14,9 @@ namespace quadrotor_command
     m_sub_truck_odom = m_nh.subscribe<nav_msgs::Odometry>(m_truck_odom_sub_topic_name, 1, &QuadrotorCommand::truckOdomCallback, this);
     m_sub_uav_odom = m_nh.subscribe<nav_msgs::Odometry>(m_uav_odom_sub_topic_name, 1, &QuadrotorCommand::uavOdomCallback, this);
     sleep(0.2); //To collect initial values for truck and uav odom, which will be used in following functions
+
+    // test
+    m_move_state = 1;
   }
 
   void QuadrotorCommand::truckOdomCallback(const nav_msgs::OdometryConstPtr& truck_odom_msg)
@@ -139,6 +142,23 @@ namespace quadrotor_command
         uav_cmd.linear.y = origin_cmd_vel.getY();
         uav_cmd.linear.z = 0;
       }
+
+    // test
+    if (m_up_down_test){
+      if (m_move_state == 1){
+        if(m_uav_world_pos[2] > 2)
+          uav_cmd.linear.z = -1;
+        else
+          m_move_state = 2;
+      }
+      if (m_move_state == 2){
+        if(m_uav_world_pos[2] < 8)
+          uav_cmd.linear.z = 1;
+        else
+          m_move_state = 1;
+      }
+    }
+
     m_pub_uav_cmd.publish(uav_cmd);
 
     //std::cout << "Truck Uav dis: " << truck_uav_rel_uav_pos.getX() << ", " << truck_uav_rel_uav_pos.getY() << "\n";

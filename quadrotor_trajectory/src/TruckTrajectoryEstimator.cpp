@@ -44,6 +44,7 @@ namespace truck_trajectory_estimator
     pnh.param("uav_cmd_traj_track_d_term_max", m_uav_commander.m_traj_track_d_term_max, 3.0);
     pnh.param("uav_traj_polynomial_order", m_uav_traj_order, 10);
     pnh.param("uav_traj_derivation_order", m_uav_traj_dev_order, 4);
+    pnh.param("uav_up_down_test", m_uav_commander.m_up_down_test, false);
 
     if (m_uav_commander.m_direct_pid_mode)
       std::cout << "DIRECT PID MODE\n\n";
@@ -566,6 +567,7 @@ namespace truck_trajectory_estimator
     options.enableFlippingBounds = BT_TRUE;
     options.enableFarBounds = BT_TRUE;
     options.printLevel = PL_LOW;
+    //options.terminationTolerance = 1.0; // randomly trial for Premature homotopy termination error
 
     exampleQ_x.setOptions( options );
     exampleQ_y.setOptions( options );

@@ -69,6 +69,9 @@ namespace quadrotor_command
     double m_traj_track_i_term_max;
     double m_traj_track_d_term_max;
 
+    //test
+    int m_move_state;
+    bool m_up_down_test;
 
     // nav_mags::Odometry uav_odom_;
     //nav_mags::Odometry truck_odom_;
