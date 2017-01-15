@@ -105,6 +105,8 @@ namespace truck_trajectory_estimator
         else
           return;
       }
+
+
     // Uav wait until it could "see" the truck.
     if (m_uav_state == 1)
       {
@@ -137,12 +139,12 @@ namespace truck_trajectory_estimator
         // Direct pid control
         if (m_uav_commander.m_direct_pid_mode)
           m_uav_commander.directPidTracking(1);
-        else if (!m_uav_commander.isUavTruckNear(6.0)){
-          m_uav_state = 2;
-          std::cout << "UAV is far from truck.\n";
-          std::cout << "Return to pid tracking.\n";
-          m_uav_commander.directPidTracking(1);
-        }
+        // else if (!m_uav_commander.isUavTruckNear(6.0)){
+        //   m_uav_state = 2;
+        //   std::cout << "UAV is far from truck.\n";
+        //   std::cout << "Return to pid tracking.\n";
+        //   m_uav_commander.directPidTracking(1);
+        // }
         else if (!m_uav_traj_planning_flag){
           m_uav_commander.directPidTracking(1);
         }
@@ -505,7 +507,6 @@ namespace truck_trajectory_estimator
       mul *= m_uav_landing_time;
     }
 
-
     mul = 1.0;
     for (int i = 1; i < m_uav_traj_order; ++i){
       A_x_r[3*m_uav_traj_order + i] = mul * i;
@@ -523,8 +524,10 @@ namespace truck_trajectory_estimator
     //lb_A_y(3) = truck_land_vel.y();
     ub_A_y_r[3] = lb_A_y_r[3];
 
+
     Vector3d land_pos = nOrderTruckTrajectory(0, m_uav_landing_time + m_truck_estimate_start_time);
     double truck_ang;
+
     truck_ang = atan2(lb_A_y_r[3], lb_A_x_r[3]);
     lb_A_x_r[2] = land_pos.x() + 0.5*cos(truck_ang);
     ub_A_x_r[2] = lb_A_x_r[2];
@@ -656,19 +659,23 @@ namespace truck_trajectory_estimator
     exampleQ_x.init(H_x_r, g_x_r, A_x_r, NULL, NULL, lb_A_x_r, ub_A_x_r, nWSR_x,NULL );
 
     if (!exampleQ_x.isSolved()){
-      std::cout << "problem x is not solved!!!!\n";
+      //std::cout << "problem x is not solved!!!!\n";
+      ROS_WARN("problem x is not solved!!!!");
       //return;
     }
     if (!exampleQ_x.isInitialised()){
-      std::cout << "problem x is not initialized!!!!\n";
+      //std::cout << "problem x is not initialized!!!!\n"
+      ROS_WARN("problem x is not initialized!!!!");;
       //return;
     }
     if (exampleQ_x.isInfeasible()){
-      std::cout << "problem x is Infeasible!!!!\n";
+      //std::cout << "problem x is Infeasible!!!!\n";
+      ROS_WARN("problem x is not Infeasible!!!!");;
       //return;
     }
     if (exampleQ_x.isUnbounded()){
-      std::cout << "problem x is Unbounded(!!!!\n";
+      //std::cout << "problem x is Unbounded!!!!\n";
+      ROS_WARN("problem x is not Unbounded!!!!");
       //return;
     }
 
@@ -678,19 +685,23 @@ namespace truck_trajectory_estimator
     exampleQ_y.init(H_y_r, g_y_r, A_y_r, NULL, NULL, lb_A_y_r, ub_A_y_r, nWSR_y,NULL );
 
     if (!exampleQ_y.isSolved()){
-      std::cout << "problem y is not solved!!!!\n";
+      //std::cout << "problem y is not solved!!!!\n";
+      ROS_WARN("problem y is not solved!!!!");
       //return;
     }
     if (!exampleQ_y.isInitialised()){
-      std::cout << "problem y is not initialized!!!!\n";
+      //std::cout << "problem y is not initialized!!!!\n";
+      ROS_WARN("problem y is not initialized!!!!");
       //return;
     }
     if (exampleQ_y.isInfeasible()){
-      std::cout << "problem y is Infeasible!!!!\n";
+      //std::cout << "problem y is Infeasible!!!!\n";
+      ROS_WARN("problem y is not Infeasible!!!!");
       //return;
     }
     if (exampleQ_y.isUnbounded()){
-      std::cout << "problem y is Unbounded(!!!!\n";
+      //std::cout << "problem y is Unbounded(!!!!\n";
+      ROS_WARN("problem y is not Unbounded!!!!");
       //return;
     }
 
