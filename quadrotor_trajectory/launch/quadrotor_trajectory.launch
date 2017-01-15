@@ -25,8 +25,8 @@
     <param name="uav_traj_derivation_order"  value="4" />
     <param name="uav_vel_upper_bound"  value="7.0" />
     <param name="uav_vel_lower_bound"  value="-7.0" />
-    <param name="uav_acc_upper_bound"  value="3.0" />
-    <param name="uav_acc_lower_bound"  value="-3.0" />
+    <param name="uav_acc_upper_bound"  value="4.0" />
+    <param name="uav_acc_lower_bound"  value="-4.0" />
 
     <param name="direct_pid_mode"  value="$(arg direct_pid)" />
     <param name="landing_mode"  value="$(arg landing)" />

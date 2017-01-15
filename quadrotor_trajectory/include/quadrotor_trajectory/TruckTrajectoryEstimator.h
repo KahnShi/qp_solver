@@ -96,6 +96,7 @@ namespace truck_trajectory_estimator
     VectorXd *m_uav_prev_traj_param_x_ptr;
     VectorXd *m_uav_prev_traj_param_y_ptr;
     double m_uav_prev_traj_start_time;
+    double m_uav_prev_traj_start_height;
     bool m_uav_traj_planning_flag;
     double m_uav_landing_time;
     double m_uav_landing_vel;

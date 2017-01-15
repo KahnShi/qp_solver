@@ -208,34 +208,45 @@ namespace quadrotor_command
     // D term
     double uav_yaw_d_term = m_uav_world_ang_vel.getZ();
 
-    double uav_yaw_ang_vel = uav_yaw_p_term * 3 + m_uav_yaw_i_term_accumulation * 0.06 + uav_yaw_d_term * 1;
+    double uav_yaw_ang_vel = uav_yaw_p_term;// + m_uav_yaw_i_term_accumulation * 0.06 + uav_yaw_d_term * 1;
     uav_track_cmd.angular.x = 0.0;
     uav_track_cmd.angular.y = 0.0;
-    uav_track_cmd.angular.z = 0.0;//uav_yaw_ang_vel;
+    uav_track_cmd.angular.z = uav_yaw_ang_vel;
 
     // Position pid control
-    tf::Vector3 traj_track_p_term = des_uav_rel_world_pos;
-    if (traj_track_p_term.getX() > 3.0)
-      traj_track_p_term.setX(3.0);
-    else if (traj_track_p_term.getX() < -3.0)
+    double traj_z_vel_p_term = des_uav_rel_world_pos * 0.3;
+    if (traj_z_vel_p_term.getZ() > 1.4)
+      traj_z_vel_p_term.setZ(1.4);
+    else if (traj_z_vel_p_term.getZ() < -1.4)
+      traj_z_vel_p_term.setZ(-1.4);
+    tf::Vector3 traj_track_p_term = des_uav_rel_world_pos * 0.7;
+    if (traj_track_p_term.getX() > 4.0)
+      traj_track_p_term.setX(4.0);
+    else if (traj_track_p_term.getX() < -4.0)
       traj_track_p_term.setX(-4.0);
-    if (traj_track_p_term.getY() > 3.0)
+    if (traj_track_p_term.getY() > 4.0)
       traj_track_p_term.setY(4.0);
-    else if (traj_track_p_term.getY() < -3.0)
+    else if (traj_track_p_term.getY() < -4.0)
       traj_track_p_term.setY(-4.0);
 
     // I term
     m_traj_track_i_term_accumulation = m_traj_track_i_term_accumulation + des_uav_rel_world_pos / m_control_freq;
-    if (m_traj_track_i_term_accumulation.getX() > 2.0)
-      m_traj_track_i_term_accumulation.setX(2.0);
-    else if (m_traj_track_i_term_accumulation.getX() < -2.0)
-      m_traj_track_i_term_accumulation.setX(-2.0);
-    if (m_traj_track_i_term_accumulation.getY() > 2.0)
-      m_traj_track_i_term_accumulation.setY(2.0);
-    else if (m_traj_track_i_term_accumulation.getY() < -2.0)
-      m_traj_track_i_term_accumulation.setY(-2.0);
+    tf::Vector3 traj_track_i_term = m_traj_track_i_term_accumulation;
+    double traj_track_i_term_max = 4.0;
+    if (m_traj_track_i_term_accumulation.getX() > traj_track_i_term_max)
+      m_traj_track_i_term_accumulation.setX(traj_track_i_term_max);
+    else if (m_traj_track_i_term_accumulation.getX() < -traj_track_i_term_max)
+      m_traj_track_i_term_accumulation.setX(-traj_track_i_term_max);
+    if (m_traj_track_i_term_accumulation.getY() > traj_track_i_term_max)
+      m_traj_track_i_term_accumulation.setY(traj_track_i_term_max);
+    else if (m_traj_track_i_term_accumulation.getY() < -traj_track_i_term_max)
+      m_traj_track_i_term_accumulation.setY(-traj_track_i_term_max);
+    m_traj_track_i_term_accumulation.setZ(0);
+
+    traj_track_i_term = m_traj_track_i_term_accumulation * 0.1;
     // feedforward
-    tf::Vector3 uav_vel = des_uav_world_vel + traj_track_p_term * 0.5 + m_traj_track_i_term_accumulation * 0.01;
+    tf::Vector3 uav_vel = des_uav_world_vel + traj_track_p_term + traj_track_i_term;
+    double uav_vel_z = traj_z_vel_p_term + des_uav_world_vel[2];
 
     // Currently only consider speed in x,y dim
     double origin_vel_norm = sqrt(pow(uav_vel.getX(), 2) + pow(uav_vel.getY(), 2));
@@ -249,10 +260,14 @@ namespace quadrotor_command
       uav_track_cmd.linear.y = uav_vel.getY();
     }
     // if close to truck's cable (0.5m height), then stop giving speed in z axis
-    if (m_landing_mode || abs(uav_des_pos[2]-0.5) < 0.1)
+    if (!m_landing_mode)
       uav_track_cmd.linear.z = 0;
-    else
-      uav_track_cmd.linear.z = -1;
+    else{
+      if (abs(m_uav_world_pos.getZ()-0.5) > 0.1)
+        uav_track_cmd.linear.z = uav_vel_z;
+      else
+        uav_track_cmd.linear.z = 0;
+    }
 
     std::cout << "Uav cmd vel: " << uav_track_cmd.linear.x << ", " << uav_track_cmd.linear.y << "\n\n";
     std::cout << "Uav pid vel: " << m_uav_pid_cmd.linear.x << ", " << m_uav_pid_cmd.linear.y << "\n\n";
