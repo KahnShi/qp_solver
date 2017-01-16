@@ -214,11 +214,11 @@ namespace quadrotor_command
     uav_track_cmd.angular.z = uav_yaw_ang_vel;
 
     // Position pid control
-    double traj_z_vel_p_term = des_uav_rel_world_pos * 0.3;
-    if (traj_z_vel_p_term.getZ() > 1.4)
-      traj_z_vel_p_term.setZ(1.4);
-    else if (traj_z_vel_p_term.getZ() < -1.4)
-      traj_z_vel_p_term.setZ(-1.4);
+    double traj_z_vel_p_term = des_uav_rel_world_pos[2] * 0.3;
+    if (traj_z_vel_p_term > 1.4)
+      traj_z_vel_p_term = 1.4;
+    else if (traj_z_vel_p_term < -1.4)
+      traj_z_vel_p_term = -1.4;
     tf::Vector3 traj_track_p_term = des_uav_rel_world_pos * 0.7;
     if (traj_track_p_term.getX() > 4.0)
       traj_track_p_term.setX(4.0);
