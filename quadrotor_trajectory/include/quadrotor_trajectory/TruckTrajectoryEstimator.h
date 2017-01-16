@@ -131,6 +131,13 @@ namespace truck_trajectory_estimator
     int factorial(int n, int order);
     double getPointFromTruckTrajectory(char axis, double var_value);
     Vector3d nOrderTruckTrajectory(int n, double t);
+    /* truck moves in constant speed, but generated polynomial trajectory is not wonderful constant
+       eg. if we want 2s later's position or velocity of truck, if we directly use add 2s in truck trajectory function,
+       we may get wrong result. Current solution is assume in future period, truck's speed is constant (eg. 4m/s).
+       so 2s later means truck moves 8m forward. so look forward by seperate trajectory into several segments to get 8m's location.
+       Finally return to the related "time" with respect to trajectory function.
+     */
+    double realTimeCvtToTruckTrajectoryTime(double t, Vector3d truck_vel);
     Vector3d nOrderUavTrajectory(int n, double t);
     bool isTruckDeviateTrajectory(double threshold, geometry_msgs::Point truck_pos, double current_time);
   };

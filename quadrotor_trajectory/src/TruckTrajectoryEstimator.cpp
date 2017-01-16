@@ -520,9 +520,11 @@ namespace truck_trajectory_estimator
       A_y_r[3*m_uav_traj_order + i] = mul * i;
       mul *= m_uav_landing_time;
     }
-    Vector3d truck_land_vel = nOrderTruckTrajectory(1, m_uav_landing_time + m_truck_estimate_start_time);
-    double truck_land_vel_abs = sqrt(pow(truck_land_vel.x(), 2) + pow(truck_land_vel.y(), 2));
+
     Vector3d truck_init_vel = nOrderTruckTrajectory(1, 0 + m_truck_estimate_start_time);
+    double truck_traj_related_time = realTimeCvtToTruckTrajectoryTime(m_uav_landing_time + m_truck_estimate_start_time, truck_init_vel);
+    Vector3d truck_land_vel = nOrderTruckTrajectory(1, truck_traj_related_time);
+    double truck_land_vel_abs = sqrt(pow(truck_land_vel.x(), 2) + pow(truck_land_vel.y(), 2));
     double truck_init_vel_abs = sqrt(pow(truck_init_vel.x(), 2) + pow(truck_init_vel.y(), 2));
     lb_A_x_r[3] = truck_init_vel_abs * truck_land_vel.x()/truck_land_vel_abs;
     //lb_A_x(3) = truck_land_vel.x();
@@ -532,13 +534,13 @@ namespace truck_trajectory_estimator
     ub_A_y_r[3] = lb_A_y_r[3];
 
 
-    Vector3d land_pos = nOrderTruckTrajectory(0, m_uav_landing_time + m_truck_estimate_start_time);
+    Vector3d land_pos = nOrderTruckTrajectory(0, truck_traj_related_time);
     double truck_ang;
 
     truck_ang = atan2(lb_A_y_r[3], lb_A_x_r[3]);
-    lb_A_x_r[2] = land_pos.x();// - 0.5*cos(-3.1416/4.0);
+    lb_A_x_r[2] = land_pos.x();// - 0.5*cos(truck_ang);
     ub_A_x_r[2] = lb_A_x_r[2];
-    lb_A_y_r[2] = land_pos.y();// - 0.5*sin(-3.1416/4.0);
+    lb_A_y_r[2] = land_pos.y();// - 0.5*sin(truck_ang);
     ub_A_y_r[2] = lb_A_y_r[2];
 
 
@@ -862,6 +864,26 @@ namespace truck_trajectory_estimator
         temp *= delta_t;
       }
     return result;
+  }
+
+  double TruckTrajectoryEstimator::realTimeCvtToTruckTrajectoryTime(double t, Vector3d truck_vel)
+  {
+    double delta_t = t - m_truck_estimate_start_time;
+    double segment_time_unit = 0.1;
+    int segment_cnt = 0;
+    double accumulation_traj = 0, sum_traj = delta_t * (sqrt(pow(truck_vel.x(), 2)
+                                                             + (pow(truck_vel.y(), 2))));
+    Vector3d next_pos, cur_pos;
+    cur_pos = nOrderTruckTrajectory(0, m_truck_estimate_start_time);
+    while (1){
+      if (sum_traj <= accumulation_traj)
+        break;
+      ++segment_cnt;
+      next_pos = nOrderTruckTrajectory(0, m_truck_estimate_start_time + segment_time_unit * segment_cnt);
+      accumulation_traj += sqrt(pow(next_pos.x()-cur_pos.x(), 2) + pow(next_pos.y()-cur_pos.y(), 2));
+      cur_pos = next_pos;
+    }
+    return m_truck_estimate_start_time + segment_time_unit * segment_cnt;
   }
 
   void TruckTrajectoryEstimator::traj_estimate_config_callback(quadrotor_trajectory::TrajectoryEstimateConfig &config, uint32_t level)
