@@ -87,6 +87,7 @@ namespace truck_trajectory_estimator
     std::string m_truck_odom_sub_topic_name;
 
     /* uav command */
+    bool m_is_uav_traj_generate;
     QuadrotorCommand m_uav_commander;
     int m_uav_state; //0,not finish taking off; 1,pid tracking; 2,traj trakcing
     int m_uav_traj_order;

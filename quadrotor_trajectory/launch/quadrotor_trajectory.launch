@@ -2,6 +2,7 @@
   <arg name="gazebo" default="true"/>
   <arg name="direct_pid" default="false"/>
   <arg name="landing" default="false"/>
+  <arg name="quadrotor_trajectory" default="true"/>
 
   <node pkg="quadrotor_trajectory" type="truck_trajectory_estimator_node" name="truck_trajectory_estimator_node" output="screen" >
     <param name="truck_odom_sub_topic_name" type="string" value="/truck/ground_truth/odom" />
@@ -16,6 +17,7 @@
     <param name="truck_visualization_preview_time"  value="0.0" />
     <param name="truck_smooth_forward_time"  value="0.0" />
 
+    <param name="uav_traj_generate"  value="$(arg quadrotor_trajectory)" />
     <param name="uav_traj_polynomial_order"  value="10" />
     <param name="uav_traj_derivation_order"  value="4" />
     <param name="uav_vel_upper_bound"  value="7.0" />

@@ -23,6 +23,7 @@ namespace truck_trajectory_estimator
     pnh.param("truck_max_acceleration", m_truck_max_acc, 1.5);
     pnh.param("truck_cable_height", m_truck_cable_height, 0.5);
 
+    pnh.param("uav_traj_generate", m_is_uav_traj_generate, true);
     pnh.param("uav_odom_sub_topic_name", m_uav_commander.m_uav_odom_sub_topic_name, std::string("/ground_truth/state"));
     pnh.param("uav_cmd_pub_topic_name", m_uav_commander.m_uav_cmd_pub_topic_name, std::string("/cmd_vel"));
     pnh.param("uav_vel_upper_bound", m_uav_commander.m_uav_vel_ub, 10.0);
@@ -96,73 +97,73 @@ namespace truck_trajectory_estimator
   {
     m_truck_odom = *truck_odom_msg;
 
-    //ROS_INFO("Get Odom.");
-    //std::cout << m_n_truck_new_odom << "\n";
     //uav command
-    if (m_uav_state == 0)
-      {
-        if (m_uav_commander.m_takeoff_flag == 2)
-          m_uav_state = 1;
-        else
-          return;
-      }
+    if (m_is_uav_traj_generate){
+      if (m_uav_state == 0)
+        {
+          if (m_uav_commander.m_takeoff_flag == 2)
+            m_uav_state = 1;
+          else
+            return;
+        }
 
 
-    // Uav wait until it could "see" the truck.
-    if (m_uav_state == 1)
-      {
-        if (m_uav_commander.isUavTruckNear(5.0))
-          m_uav_state = 2;
-        else
-          return;
-      }
-    if (m_uav_state == 2)
-      {
-        if (m_uav_commander.isUavTruckNear(3.0) && m_truck_odom_filled_flag)
-          {
-            std::cout << "UAV is close to truck.\n";
-            std::cout << "Starting trajectory tracking.\n";
-            ++m_uav_state2_cnt;
-            if (m_uav_state2_cnt > 20){
-              m_uav_state = 3;
-              m_uav_state2_cnt = 0;
+      // Uav wait until it could "see" the truck.
+      if (m_uav_state == 1)
+        {
+          if (m_uav_commander.isUavTruckNear(5.0))
+            m_uav_state = 2;
+          else
+            return;
+        }
+      if (m_uav_state == 2)
+        {
+          if (m_uav_commander.isUavTruckNear(3.0) && m_truck_odom_filled_flag)
+            {
+              std::cout << "UAV is close to truck.\n";
+              std::cout << "Starting trajectory tracking.\n";
+              ++m_uav_state2_cnt;
+              if (m_uav_state2_cnt > 20){
+                m_uav_state = 3;
+                m_uav_state2_cnt = 0;
+              }
+              else{
+                m_uav_commander.directPidTracking(1);
+              }
+              m_pub_uav_des_traj_path.publish(*m_uav_des_traj_path_ptr);
             }
-            else{
-              m_uav_commander.directPidTracking(1);
-            }
-            m_pub_uav_des_traj_path.publish(*m_uav_des_traj_path_ptr);
+          else
+            m_uav_commander.directPidTracking(1);
+        }
+      if (m_uav_state == 3)
+        {
+          // Direct pid control
+          if (m_uav_commander.m_direct_pid_mode)
+            m_uav_commander.directPidTracking(1);
+          // else if (!m_uav_commander.isUavTruckNear(6.0)){
+          //   m_uav_state = 2;
+          //   std::cout << "UAV is far from truck.\n";
+          //   std::cout << "Return to pid tracking.\n";
+          //   m_uav_commander.directPidTracking(1);
+          // }
+          else if (!m_uav_traj_planning_flag){
+            m_uav_commander.directPidTracking(1);
           }
-        else
-          m_uav_commander.directPidTracking(1);
-      }
-    if (m_uav_state == 3)
-      {
-        // Direct pid control
-        if (m_uav_commander.m_direct_pid_mode)
-          m_uav_commander.directPidTracking(1);
-        // else if (!m_uav_commander.isUavTruckNear(6.0)){
-        //   m_uav_state = 2;
-        //   std::cout << "UAV is far from truck.\n";
-        //   std::cout << "Return to pid tracking.\n";
-        //   m_uav_commander.directPidTracking(1);
-        // }
-        else if (!m_uav_traj_planning_flag){
-          m_uav_commander.directPidTracking(1);
-        }
-        else{
-          double next_frame = 1.0/25.0 + m_truck_odom.header.stamp.toSec() - m_uav_prev_traj_start_time;
-          Vector3d uav_des_vel = nOrderUavTrajectory(1, next_frame);
-          Vector3d uav_des_pos = nOrderUavTrajectory(0, next_frame);
-          uav_des_vel[2] = -m_uav_commander.m_uav_vel_z;
-          // pid control for height
-          uav_des_pos[2] = m_uav_prev_traj_start_height - m_uav_commander.m_uav_vel_z*next_frame;
+          else{
+            double next_frame = 1.0/25.0 + m_truck_odom.header.stamp.toSec() - m_uav_prev_traj_start_time;
+            Vector3d uav_des_vel = nOrderUavTrajectory(1, next_frame);
+            Vector3d uav_des_pos = nOrderUavTrajectory(0, next_frame);
+            uav_des_vel[2] = -m_uav_commander.m_uav_vel_z;
+            // pid control for height
+            uav_des_pos[2] = m_uav_prev_traj_start_height - m_uav_commander.m_uav_vel_z*next_frame;
 
-          ROS_INFO("Trajectory Tracking Next Frame:");
-          std::cout << "Des velocity: " << uav_des_vel(0) << ", " << uav_des_vel(1) << "\n Des position:  " << uav_des_pos(0) << ", " << uav_des_pos(1) << ", " << uav_des_pos(2) << "\n\n";
-          std::cout << "Cur velocity: " << m_uav_commander.m_uav_world_vel.x() << ", " << m_uav_commander.m_uav_world_vel.y() << "\n Cur position:  " << m_uav_commander.m_uav_world_pos.x() << ", " << uav_des_pos(1) << ", " << m_uav_commander.m_uav_world_pos.y() << "\n\n";
-          m_uav_commander.trajectoryTracking(uav_des_pos, uav_des_vel);
+            ROS_INFO("Trajectory Tracking Next Frame:");
+            std::cout << "Des velocity: " << uav_des_vel(0) << ", " << uav_des_vel(1) << "\n Des position:  " << uav_des_pos(0) << ", " << uav_des_pos(1) << ", " << uav_des_pos(2) << "\n\n";
+            std::cout << "Cur velocity: " << m_uav_commander.m_uav_world_vel.x() << ", " << m_uav_commander.m_uav_world_vel.y() << "\n Cur position:  " << m_uav_commander.m_uav_world_pos.x() << ", " << uav_des_pos(1) << ", " << m_uav_commander.m_uav_world_pos.y() << "\n\n";
+            m_uav_commander.trajectoryTracking(uav_des_pos, uav_des_vel);
+          }
         }
-      }
+    }
 
     geometry_msgs::PoseStamped cur_truck_pose_stamped;
     cur_truck_pose_stamped.header = m_truck_odom.header;
@@ -226,21 +227,23 @@ namespace truck_trajectory_estimator
             m_truck_traj_start_time = m_truck_estimate_start_time;
             ROS_INFO("Start truck traj polynomial estmate.");
             truckTrajectoryEstimation();
-            m_uav_traj_planning_flag = uavTrajectoryPlanning();
-            if (!m_uav_traj_planning_flag){
-              // if prev traj is not too old, use it.
-              // Otherwise, do not use, but choose to directly pid follow.
-              if (m_truck_traj_start_time - m_uav_prev_traj_start_time < 10){
-                m_uav_traj_planning_flag = true;
-                (*m_uav_traj_param_x_ptr) = (*m_uav_prev_traj_param_x_ptr);
-                (*m_uav_traj_param_y_ptr) = (*m_uav_prev_traj_param_y_ptr);
+            if (m_is_uav_traj_generate){
+              m_uav_traj_planning_flag = uavTrajectoryPlanning();
+              if (!m_uav_traj_planning_flag){
+                // if prev traj is not too old, use it.
+                // Otherwise, do not use, but choose to directly pid follow.
+                if (m_truck_traj_start_time - m_uav_prev_traj_start_time < 10){
+                  m_uav_traj_planning_flag = true;
+                  (*m_uav_traj_param_x_ptr) = (*m_uav_prev_traj_param_x_ptr);
+                  (*m_uav_traj_param_y_ptr) = (*m_uav_prev_traj_param_y_ptr);
+                }
               }
-            }
-            else{
+              else{
                 (*m_uav_prev_traj_param_x_ptr) = (*m_uav_traj_param_x_ptr);
                 (*m_uav_prev_traj_param_y_ptr) = (*m_uav_traj_param_y_ptr);
                 m_uav_prev_traj_start_time = m_truck_traj_start_time;
                 m_uav_prev_traj_start_height = m_truck_odom.pose.pose.position.z;
+              }
             }
             ROS_INFO("Finish truck traj polynomial estmate.");
             trajectoryVisualization();
@@ -269,12 +272,14 @@ namespace truck_trajectory_estimator
             m_uav_des_traj_path_ptr = new nav_msgs::Path();
             m_uav_des_traj_path_ptr->header = m_truck_origin_path_ptr->header;
             truckTrajectoryEstimation();
-            m_uav_traj_planning_flag = uavTrajectoryPlanning();
-            if(m_uav_traj_planning_flag){
-              (*m_uav_prev_traj_param_x_ptr) = (*m_uav_traj_param_x_ptr);
-              (*m_uav_prev_traj_param_y_ptr) = (*m_uav_traj_param_y_ptr);
-              m_uav_prev_traj_start_time = m_truck_traj_start_time;
-              m_uav_prev_traj_start_height = m_truck_odom.pose.pose.position.z;
+            if (m_is_uav_traj_generate){
+              m_uav_traj_planning_flag = uavTrajectoryPlanning();
+              if(m_uav_traj_planning_flag){
+                (*m_uav_prev_traj_param_x_ptr) = (*m_uav_traj_param_x_ptr);
+                (*m_uav_prev_traj_param_y_ptr) = (*m_uav_traj_param_y_ptr);
+                m_uav_prev_traj_start_time = m_truck_traj_start_time;
+                m_uav_prev_traj_start_height = m_truck_odom.pose.pose.position.z;
+              }
             }
             trajectoryVisualization();
           }
@@ -765,27 +770,29 @@ namespace truck_trajectory_estimator
       }
     m_pub_truck_traj_path.publish(*m_truck_traj_path_ptr);
 
-    int uav_predict_number;
-    if (m_truck_traj_start_time - m_uav_prev_traj_start_time > m_uav_landing_time)
-      uav_predict_number = int((m_uav_landing_time+m_truck_traj_start_time - m_uav_prev_traj_start_time+1) / m_truck_vis_predict_time_unit);
-    else
-      uav_predict_number = int(m_uav_landing_time / m_truck_vis_predict_time_unit);
-    std::cout << "!!!! landing time: " << m_uav_landing_time << ", predict num: " << uav_predict_number << "\n";
-    for (int point_id = 0; point_id < uav_predict_number; ++point_id)
-      {
-        geometry_msgs::PoseStamped cur_pose;
-        cur_pose.header = last_pose.header;
-        Vector3d uav_pos = nOrderUavTrajectory(0, point_id * m_truck_vis_predict_time_unit);
-        cur_pose.pose.position.x = uav_pos.x();
-        cur_pose.pose.position.y = uav_pos.y();
-        if (m_uav_commander.m_landing_mode)
-          cur_pose.pose.position.z = m_uav_commander.m_uav_world_pos.z() - m_uav_landing_vel*point_id*m_truck_vis_predict_time_unit;
-        else
-          cur_pose.pose.position.z = m_uav_commander.m_uav_world_pos.z() - m_uav_landing_vel*point_id*m_truck_vis_predict_time_unit;
-        m_uav_des_traj_path_ptr->poses.push_back(cur_pose);
+    if (m_is_uav_traj_generate){
+      int uav_predict_number;
+      if (m_truck_traj_start_time - m_uav_prev_traj_start_time > m_uav_landing_time)
+        uav_predict_number = int((m_uav_landing_time+m_truck_traj_start_time - m_uav_prev_traj_start_time+1) / m_truck_vis_predict_time_unit);
+      else
+        uav_predict_number = int(m_uav_landing_time / m_truck_vis_predict_time_unit);
+      std::cout << "!!!! landing time: " << m_uav_landing_time << ", predict num: " << uav_predict_number << "\n";
+      for (int point_id = 0; point_id < uav_predict_number; ++point_id)
+        {
+          geometry_msgs::PoseStamped cur_pose;
+          cur_pose.header = last_pose.header;
+          Vector3d uav_pos = nOrderUavTrajectory(0, point_id * m_truck_vis_predict_time_unit);
+          cur_pose.pose.position.x = uav_pos.x();
+          cur_pose.pose.position.y = uav_pos.y();
+          if (m_uav_commander.m_landing_mode)
+            cur_pose.pose.position.z = m_uav_commander.m_uav_world_pos.z() - m_uav_landing_vel*point_id*m_truck_vis_predict_time_unit;
+          else
+            cur_pose.pose.position.z = m_uav_commander.m_uav_world_pos.z() - m_uav_landing_vel*point_id*m_truck_vis_predict_time_unit;
+          m_uav_des_traj_path_ptr->poses.push_back(cur_pose);
+        }
+      if (m_uav_state >= 2){
+        m_pub_uav_des_traj_path.publish(*m_uav_des_traj_path_ptr);
       }
-    if (m_uav_state >= 2){
-      m_pub_uav_des_traj_path.publish(*m_uav_des_traj_path_ptr);
     }
   }
 
