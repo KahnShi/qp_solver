@@ -301,24 +301,29 @@ namespace truck_trajectory_estimator
     for (int point_index = 0; point_index < m_n_truck_estimate_odom; ++point_index)
       {
         VectorXd t_t = VectorXd::Zero(m_truck_traj_order);
-        //t_t_d is t_t after derivation_order operation
-        VectorXd t_t_d = VectorXd::Zero(m_truck_traj_order);
         t_t[0] = 1;
-        double mul_d = 1;
         for (int i = 1; i < m_truck_traj_order; ++i)
           {
             t_t[i] = t_t[i-1] * ((*m_truck_odom_time_ptr)[point_index] - m_truck_estimate_start_time);
-            if (i >= m_truck_traj_dev_order)
-              {
-                t_t_d[i] = factorial(i, m_truck_traj_dev_order) * mul_d;
-                mul_d *= ((*m_truck_odom_time_ptr)[point_index] + m_truck_smooth_forward_time - m_truck_estimate_start_time);
-              }
           }
         T = T + t_t * t_t.transpose();
-        D = D + t_t_d * t_t_d.transpose();
         g_x = g_x + (-2) * t_t * (*m_truck_pos_x_ptr)[point_index];
         g_y = g_y + (-2) * t_t * (*m_truck_pos_y_ptr)[point_index];
       }
+
+    VectorXd t_t_d = VectorXd::Zero(m_truck_traj_order);
+    double mul_d = 1.0;
+    for (int i = 0; i < m_truck_traj_dev_order; ++i)
+      t_t_d[i] = 0.0;
+    for (int i = m_truck_traj_dev_order; i < m_truck_traj_order; ++i)
+      {
+        t_t_d[i] = factorial(i, m_truck_traj_dev_order) * mul_d;
+        mul_d *= ((*m_truck_odom_time_ptr)[m_n_truck_estimate_odom-1] - m_truck_estimate_start_time + m_truck_smooth_forward_time);
+      }
+    D = t_t_d * t_t_d.transpose();
+    for (int row_index = m_truck_traj_dev_order; row_index < m_truck_traj_order; ++row_index)
+      for (int col_index = m_truck_traj_dev_order; col_index < m_truck_traj_order; ++col_index)
+        D(row_index, col_index) = D(row_index, col_index) / double(row_index+col_index-m_truck_traj_dev_order*2+1);
 
     // Add constraints
     // Check velocity and acceleration in future 0~2 second, and every 0.2 second
@@ -441,18 +446,14 @@ namespace truck_trajectory_estimator
 
     // calculate 4-th order snap, then square it, then integral it.
     VectorXd t_t_d = VectorXd::Zero(m_uav_traj_order);
-    VectorXd t_t = VectorXd::Zero(m_uav_traj_order);
     double mul_d = 1.0;
-    t_t[0] = 1.0;
-    t_t_d[0] = 0.0;
-    for (int i = 1; i < m_uav_traj_order; ++i)
+
+    for (int i = 0; i < m_uav_traj_dev_order; ++i)
+      t_t_d[i] = 0.0;
+    for (int i = m_uav_traj_dev_order; i < m_uav_traj_order; ++i)
       {
-        t_t[i] = t_t[i-1] * m_uav_landing_time;
-        if (i >= m_uav_traj_dev_order)
-          {
-            t_t_d[i] = factorial(i, m_uav_traj_dev_order) * mul_d;
-            mul_d *= m_uav_landing_time;
-          }
+        t_t_d[i] = factorial(i, m_uav_traj_dev_order) * mul_d;
+        mul_d *= m_uav_landing_time;
       }
     T = t_t_d * t_t_d.transpose();
     for (int row_index = m_uav_traj_dev_order; row_index < m_uav_traj_order; ++row_index)
