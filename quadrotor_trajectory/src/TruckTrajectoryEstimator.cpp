@@ -292,38 +292,41 @@ namespace truck_trajectory_estimator
 
   void TruckTrajectoryEstimator::truckTrajectoryEstimation()
   {
-    MatrixXd T = MatrixXd::Zero(m_truck_traj_order, m_truck_traj_order);
-    MatrixXd D = MatrixXd::Zero(m_truck_traj_order, m_truck_traj_order);
-    MatrixXd H = MatrixXd::Zero(m_truck_traj_order, m_truck_traj_order);
-    VectorXd g_x = VectorXd::Zero(m_truck_traj_order);
-    VectorXd g_y = VectorXd::Zero(m_truck_traj_order);
+    MatrixXd T = MatrixXd::Zero(m_truck_traj_order * 2, m_truck_traj_order * 2);
+    MatrixXd D = MatrixXd::Zero(m_truck_traj_order * 2, m_truck_traj_order * 2);
+    MatrixXd H = MatrixXd::Zero(m_truck_traj_order * 2, m_truck_traj_order * 2);
+    VectorXd g = VectorXd::Zero(m_truck_traj_order * 2);
 
     for (int point_index = 0; point_index < m_n_truck_estimate_odom; ++point_index)
       {
-        VectorXd t_t = VectorXd::Zero(m_truck_traj_order);
-        t_t[0] = 1;
+        MatrixXd t_t = MatrixXd::Zero(m_truck_traj_order * 2, 2);
+        t_t(0, 0) = 1; t_t(m_truck_traj_order, 1) = 1;
         for (int i = 1; i < m_truck_traj_order; ++i)
           {
-            t_t[i] = t_t[i-1] * ((*m_truck_odom_time_ptr)[point_index] - m_truck_estimate_start_time);
+            t_t(i, 0) = t_t(i-1, 0) * ((*m_truck_odom_time_ptr)[point_index] - m_truck_estimate_start_time);
+            t_t(i + m_truck_traj_order, 1) = t_t(i, 0);
           }
         T = T + t_t * t_t.transpose();
-        g_x = g_x + (-2) * t_t * (*m_truck_pos_x_ptr)[point_index];
-        g_y = g_y + (-2) * t_t * (*m_truck_pos_y_ptr)[point_index];
+        Vector2d Pi((*m_truck_pos_x_ptr)[point_index], (*m_truck_pos_y_ptr)[point_index]);
+        g = g - 2 * t_t * Pi;
       }
 
-    VectorXd t_t_d = VectorXd::Zero(m_truck_traj_order);
+    MatrixXd t_t_d = MatrixXd::Zero(m_truck_traj_order * 2, 2);
     double mul_d = 1.0;
-    for (int i = 0; i < m_truck_traj_dev_order; ++i)
-      t_t_d[i] = 0.0;
     for (int i = m_truck_traj_dev_order; i < m_truck_traj_order; ++i)
       {
-        t_t_d[i] = factorial(i, m_truck_traj_dev_order) * mul_d;
-        mul_d *= ((*m_truck_odom_time_ptr)[m_n_truck_estimate_odom-1] - m_truck_estimate_start_time + m_truck_smooth_forward_time);
+        t_t_d(i, 0) = factorial(i, m_truck_traj_dev_order) * mul_d;
+        t_t_d(i + m_truck_traj_order, 1) = t_t_d(i, 0);
+        mul_d = mul_d * ((*m_truck_odom_time_ptr)[m_n_truck_estimate_odom-1] - m_truck_estimate_start_time + m_truck_smooth_forward_time);
       }
     D = t_t_d * t_t_d.transpose();
+
     for (int row_index = m_truck_traj_dev_order; row_index < m_truck_traj_order; ++row_index)
       for (int col_index = m_truck_traj_dev_order; col_index < m_truck_traj_order; ++col_index)
-        D(row_index, col_index) = D(row_index, col_index) / double(row_index+col_index-m_truck_traj_dev_order*2+1);
+        {
+          D(row_index, col_index) = D(row_index, col_index) / double(row_index+col_index-m_truck_traj_dev_order*2+1);
+          D(row_index+m_truck_traj_order, col_index+m_truck_traj_order) = D(row_index, col_index);
+        }
 
     // Add constraints
     // Check velocity and acceleration in future 0~2 second, and every 0.2 second
@@ -357,9 +360,21 @@ namespace truck_trajectory_estimator
     H = 2 * T + m_truck_lambda_D * m_n_truck_estimate_odom * D;
 
     /* Setting up QProblemB object. */
+    real_t *H_r = new real_t[m_truck_traj_order * m_truck_traj_order * 4];
+    real_t *g_r = new real_t[m_truck_traj_order * 2];
+    for (int i = 0; i < m_truck_traj_order * 2; ++i){
+      int row_s = i * m_truck_traj_order * 2;
+      for (int j = 0; j < m_truck_traj_order * 2; ++j){
+        H_r[row_s + j] = H(i, j);
+      }
+    }
+    for (int i = 0; i < m_truck_traj_order * 2; ++i){
+      g_r[i] = g(i);
+    }
 
-    SQProblem exampleQ_x( m_truck_traj_order,0 );
-    SQProblem exampleQ_y( m_truck_traj_order,0 );
+    ROS_INFO("Esitmation 4");
+
+    SQProblem exampleQ(2 * m_truck_traj_order,0 );
 
     Options options;
     //options.enableFlippingBounds = BT_FALSE;
@@ -368,16 +383,13 @@ namespace truck_trajectory_estimator
     // options.enableCholeskyRefactorisation = 1;
     // options.enableEqualities = BT_TRUE;
     options.printLevel = PL_LOW;
-    exampleQ_x.setOptions( options );
-    exampleQ_y.setOptions( options );
+    exampleQ.setOptions( options );
 
     int_t nWSR_x = 30;
-    exampleQ_x.init(H.data(),g_x.data(),A.data(),NULL,NULL,lb_A.data(), ub_A.data(), nWSR_x,0 );
-    exampleQ_x.getPrimalSolution(m_truck_traj_param_x_ptr->data());
-
-    int_t nWSR_y = 30;
-    exampleQ_y.init(H.data(),g_y.data(),A.data(),NULL,NULL,lb_A.data(), ub_A.data(), nWSR_y,0 );
-    exampleQ_y.getPrimalSolution(m_truck_traj_param_y_ptr->data());
+    //exampleQ.init(H_r, g_r, A.data(),NULL,NULL,lb_A.data(), ub_A.data(), nWSR_x,0 );
+    exampleQ.init(H_r, g_r, NULL,NULL,NULL,NULL, NULL, nWSR_x,0 );
+    real_t param_r[m_truck_traj_order * 2];
+    exampleQ.getPrimalSolution(param_r);
 
     /* Print qp's paramater and result for truck trajectory estimation. */
     //printf( " ];  objVal = %e\n\n", exampleQ.getObjVal() );
@@ -385,12 +397,16 @@ namespace truck_trajectory_estimator
 
     std::cout << "Truck trajectory estimation:\n\n";
     std::cout <<"[x]: ";
-    for (int i = 0; i < m_truck_traj_order; ++i)
+    for (int i = 0; i < m_truck_traj_order; ++i){
+      (*m_truck_traj_param_x_ptr)[i] = param_r[i];
       std::cout << m_truck_traj_param_x_ptr->data()[i] << ", ";
+    }
     printf("\n");
     std::cout <<"[y]: ";
-    for (int i = 0; i < m_truck_traj_order; ++i)
+    for (int i = 0; i < m_truck_traj_order; ++i){
+      (*m_truck_traj_param_y_ptr)[i] = param_r[i + m_truck_traj_order];
       std::cout << m_truck_traj_param_y_ptr->data()[i] << ", ";
+    }
     printf("\n");
 
     // std::cout << "Start:\n Matrix H: \n";
@@ -479,10 +495,10 @@ namespace truck_trajectory_estimator
     real_t *A_y_r = new real_t[n_constraints*m_uav_traj_order];
     for (int i = 0; i < n_constraints*m_uav_traj_order; ++i) A_y_r[i] = 0.0;
 
-    real_t *g_x_r = new real_t[n_constraints];
+    real_t *g_x_r = new real_t[m_uav_traj_order];
     for (int i = 0; i < n_constraints; ++i) g_x_r[i] = 0.0;
 
-    real_t *g_y_r = new real_t[n_constraints];
+    real_t *g_y_r = new real_t[m_uav_traj_order];
     for (int i = 0; i < n_constraints; ++i) g_y_r[i] = 0.0;
 
     real_t *lb_A_x_r = new real_t[n_constraints];

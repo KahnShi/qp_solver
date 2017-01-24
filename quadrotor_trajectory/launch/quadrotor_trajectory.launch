@@ -23,12 +23,12 @@
     <param name="uav_cmd_pub_topic_name" type="string" value="/cmd_vel" if="$(arg gazebo)" />
     <param name="truck_traj_polynomial_order"  value="8" />
     <param name="truck_traj_derivation_order"  value="3" />
-    <param name="truck_lambda_D"  value="100" />
+    <param name="truck_lambda_D"  value="10" />
     <param name="truck_estimate_odom_number"  value="25" unless="$(arg real_data)" />
     <param name="truck_estimate_odom_number"  value="75" if="$(arg real_data)" />
     <param name="truck_trajectory_generate_freqency"  value="25" unless="$(arg real_data)" />
     <param name="truck_trajectory_generate_freqency"  value="50" if="$(arg real_data)" />
-    <param name="truck_visualization_predict_time"  value="6.0" />
+    <param name="truck_visualization_predict_time"  value="3.0" />
     <param name="truck_visualization_preview_time"  value="0.0" />
     <param name="truck_smooth_forward_time"  value="3.0" />
 
