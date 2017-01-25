@@ -372,8 +372,6 @@ namespace truck_trajectory_estimator
       g_r[i] = g(i);
     }
 
-    ROS_INFO("Esitmation 4");
-
     SQProblem exampleQ(2 * m_truck_traj_order,0 );
 
     Options options;
@@ -464,8 +462,6 @@ namespace truck_trajectory_estimator
     VectorXd t_t_d = VectorXd::Zero(m_uav_traj_order);
     double mul_d = 1.0;
 
-    for (int i = 0; i < m_uav_traj_dev_order; ++i)
-      t_t_d[i] = 0.0;
     for (int i = m_uav_traj_dev_order; i < m_uav_traj_order; ++i)
       {
         t_t_d[i] = factorial(i, m_uav_traj_dev_order) * mul_d;
@@ -496,10 +492,16 @@ namespace truck_trajectory_estimator
     for (int i = 0; i < n_constraints*m_uav_traj_order; ++i) A_y_r[i] = 0.0;
 
     real_t *g_x_r = new real_t[m_uav_traj_order];
-    for (int i = 0; i < n_constraints; ++i) g_x_r[i] = 0.0;
+    for (int i = 0; i < m_uav_traj_order; ++i) g_x_r[i] = 0.0;
 
     real_t *g_y_r = new real_t[m_uav_traj_order];
-    for (int i = 0; i < n_constraints; ++i) g_y_r[i] = 0.0;
+    for (int i = 0; i < m_uav_traj_order; ++i) g_y_r[i] = 0.0;
+
+    // real_t *g_x_r = new real_t[n_constraints];
+    // for (int i = 0; i < n_constraints; ++i) g_x_r[i] = 0.0;
+
+    // real_t *g_y_r = new real_t[n_constraints];
+    // for (int i = 0; i < n_constraints; ++i) g_y_r[i] = 0.0;
 
     real_t *lb_A_x_r = new real_t[n_constraints];
     for (int i = 0; i < n_constraints; ++i) lb_A_x_r[i] = 0.0;
