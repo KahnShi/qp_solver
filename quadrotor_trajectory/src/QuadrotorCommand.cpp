@@ -269,13 +269,13 @@ namespace quadrotor_command
         uav_track_cmd.linear.z = 0;
     }
 
-    std::cout << "Uav cmd vel: " << uav_track_cmd.linear.x << ", " << uav_track_cmd.linear.y << "\n\n";
-    std::cout << "Uav pid vel: " << m_uav_pid_cmd.linear.x << ", " << m_uav_pid_cmd.linear.y << "\n\n";
+    //std::cout << "Uav cmd vel: " << uav_track_cmd.linear.x << ", " << uav_track_cmd.linear.y << "\n\n";
+    //std::cout << "Uav pid vel: " << m_uav_pid_cmd.linear.x << ", " << m_uav_pid_cmd.linear.y << "\n\n";
 
     // If velocity calculation in pid mode and traj tracking mode differs too much, then choose to pid
     if (pow(m_uav_pid_cmd.linear.x-uav_track_cmd.linear.x, 2) + pow(m_uav_pid_cmd.linear.y-uav_track_cmd.linear.y, 2) > pow(5, 2))
       {
-        ROS_INFO("PID Vel differs from Traj Vel too much!!");
+        //ROS_INFO("PID Vel differs from Traj Vel too much!!");
         //m_uav_cmd = m_uav_pid_cmd;
       }
     else
