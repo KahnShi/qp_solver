@@ -45,6 +45,7 @@ namespace quadrotor_command
     double m_uav_acc_lb;
     tf::Vector3 m_uav_world_pos;
     tf::Vector3 m_uav_world_vel;
+    tf::Vector3 m_uav_world_acc;
     tf::Vector3 m_uav_world_ang_vel;
     tf::Vector3 m_truck_world_pos;
     tf::Vector3 m_uav_truck_world_pos;

@@ -92,6 +92,7 @@ namespace truck_trajectory_estimator
     int m_uav_state; //0,not finish taking off; 1,pid tracking; 2,traj trakcing
     int m_uav_traj_order;
     int m_uav_traj_dev_order;
+    double m_uav_lambda_D;
     VectorXd *m_uav_traj_param_x_ptr;
     VectorXd *m_uav_traj_param_y_ptr;
     VectorXd *m_uav_prev_traj_param_x_ptr;
