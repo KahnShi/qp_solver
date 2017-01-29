@@ -242,7 +242,9 @@ namespace truck_trajectory_estimator
               else{
                 (*m_uav_prev_traj_param_x_ptr) = (*m_uav_traj_param_x_ptr);
                 (*m_uav_prev_traj_param_y_ptr) = (*m_uav_traj_param_y_ptr);
-                m_uav_prev_traj_start_time = m_truck_traj_start_time;
+                // Change uav trajectory function's start time to be current time.
+                //m_uav_prev_traj_start_time = m_truck_traj_start_time;
+                m_uav_prev_traj_start_time = (*m_truck_odom_time_ptr)[m_n_truck_estimate_odom-1];
                 m_uav_prev_traj_start_height = m_truck_odom.pose.pose.position.z;
               }
             }
@@ -278,7 +280,9 @@ namespace truck_trajectory_estimator
               if(m_uav_traj_planning_flag){
                 (*m_uav_prev_traj_param_x_ptr) = (*m_uav_traj_param_x_ptr);
                 (*m_uav_prev_traj_param_y_ptr) = (*m_uav_traj_param_y_ptr);
-                m_uav_prev_traj_start_time = m_truck_traj_start_time;
+                // Change uav trajectory function's start time to be current time.
+                //m_uav_prev_traj_start_time = m_truck_traj_start_time;
+                m_uav_prev_traj_start_time = (*m_truck_odom_time_ptr)[m_n_truck_estimate_odom-1];
                 m_uav_prev_traj_start_height = m_truck_odom.pose.pose.position.z;
               }
             }
@@ -451,7 +455,6 @@ namespace truck_trajectory_estimator
     MatrixXd T = MatrixXd::Zero(m_uav_traj_order, m_uav_traj_order);
     MatrixXd T1 = MatrixXd::Zero(m_uav_traj_order, m_uav_traj_order);
     MatrixXd T2 = MatrixXd::Zero(m_uav_traj_order, m_uav_traj_order);
-    MatrixXd D = MatrixXd::Zero(m_uav_traj_order, m_uav_traj_order);
     MatrixXd H = MatrixXd::Zero(m_uav_traj_order, m_uav_traj_order);
     VectorXd g_x = VectorXd::Zero(m_uav_traj_order);
     VectorXd g_y = VectorXd::Zero(m_uav_traj_order);
@@ -489,6 +492,7 @@ namespace truck_trajectory_estimator
         }
       T = t_t * t_t.transpose();
       T2 = t_t_d * t_t_d.transpose();
+
       for (int row_index = 0; row_index < m_uav_traj_order; ++row_index)
         for (int col_index = 0; col_index < m_uav_traj_order; ++col_index)
           T1(row_index, col_index) = T(row_index, col_index) * mul_factor / double(row_index+col_index + 1);
@@ -498,18 +502,23 @@ namespace truck_trajectory_estimator
 
       H = T1 + m_uav_lambda_D * T2;
 
+      double truck_t_offset = (*m_truck_odom_time_ptr)[m_n_truck_estimate_odom-1] - m_truck_traj_start_time;
       VectorXd truck_traj_param_extend_order_x = VectorXd::Zero(m_uav_traj_order);
       VectorXd truck_traj_param_extend_order_y = VectorXd::Zero(m_uav_traj_order);
       for (int i = 0; i < m_truck_traj_order; ++i){
-        truck_traj_param_extend_order_x[i] = (*m_uav_traj_param_x_ptr)[i];
-        truck_traj_param_extend_order_y[i] = (*m_uav_traj_param_y_ptr)[i];
+        truck_traj_param_extend_order_x[i] += (*m_truck_traj_param_x_ptr)[i];
+        truck_traj_param_extend_order_y[i] += (*m_truck_traj_param_y_ptr)[i];
+        for (int j = 0; j < i; ++j){
+          truck_traj_param_extend_order_x[j] += factorial(i, j) / factorial(j, j) * (*m_truck_traj_param_x_ptr)[i] * pow(truck_t_offset, j);
+          truck_traj_param_extend_order_y[j] += factorial(i, j) / factorial(j, j) * (*m_truck_traj_param_y_ptr)[i] * pow(truck_t_offset, j);
+        }
       }
       for (int i = m_truck_traj_order; i < m_uav_traj_order; ++i){
         truck_traj_param_extend_order_x[i] = 0;
         truck_traj_param_extend_order_y[i] = 0;
       }
-      g_x = -2 * T * truck_traj_param_extend_order_x;
-      g_y = -2 * T * truck_traj_param_extend_order_y;
+      g_x = -2 * T1 * truck_traj_param_extend_order_x;
+      g_y = -2 * T1 * truck_traj_param_extend_order_y;
 
       // Add constraints
       int n_landing_samples = int(m_uav_landing_time/0.1);
@@ -553,18 +562,14 @@ namespace truck_trajectory_estimator
       lb_A_y_r[1] = m_uav_commander.m_uav_world_vel.y();
       ub_A_y_r[1] = lb_A_y_r[1];
 
-      double mul = 1.0;
       for (int i = 0; i < m_uav_traj_order; ++i){
-        A_x_r[2*m_uav_traj_order + i] = mul;
-        A_y_r[2*m_uav_traj_order + i] = mul;
-        mul *= m_uav_landing_time;
+        A_x_r[2*m_uav_traj_order + i] = t_t[i];
+        A_y_r[2*m_uav_traj_order + i] = t_t[i];
       }
 
-      mul = 1.0;
       for (int i = 1; i < m_uav_traj_order; ++i){
-        A_x_r[3*m_uav_traj_order + i] = mul * i;
-        A_y_r[3*m_uav_traj_order + i] = mul * i;
-        mul *= m_uav_landing_time;
+        A_x_r[3*m_uav_traj_order + i] = t_t[i-1] * i;
+        A_y_r[3*m_uav_traj_order + i] = t_t[i-1] * i;
       }
 
       Vector3d truck_init_vel = nOrderTruckTrajectory(1, 0 + m_truck_estimate_start_time);
@@ -635,25 +640,6 @@ namespace truck_trajectory_estimator
         }
 
 
-      /* Setting up QProblemB object. */
-
-      SQProblem exampleQ_x( m_uav_traj_order,n_constraints);//, HST_SEMIDEF);
-      SQProblem exampleQ_y( m_uav_traj_order,n_constraints);//, HST_SEMIDEF);
-
-      Options options;
-      // options.enableRegularisation = BT_TRUE;
-      // options.enableNZCTests = BT_TRUE;
-      // options.enableFlippingBounds = BT_TRUE;
-      // options.enableFarBounds = BT_TRUE;
-      options.printLevel = PL_LOW;
-      // 01.26
-      //options.initialStatusBounds = ST_INACTIVE;
-      //options.terminationTolerance = 1.0; // randomly trial for Premature homotopy termination error
-
-      exampleQ_x.setOptions( options );
-      exampleQ_y.setOptions( options );
-
-
       for (int i = 0; i < m_uav_traj_order; ++i){
         g_x_r[i] = g_x(i);
         g_y_r[i] = g_y(i);
@@ -712,10 +698,29 @@ namespace truck_trajectory_estimator
       // }
       // std::cout << "\n\n";
 
+
+      /* Setting up QProblemB object. */
+
+      SQProblem exampleQ_x( m_uav_traj_order,n_constraints, HST_SEMIDEF);
+      SQProblem exampleQ_y( m_uav_traj_order,n_constraints, HST_SEMIDEF);
+
+      Options options;
+      options.enableRegularisation = BT_TRUE;
+      options.enableNZCTests = BT_TRUE;
+      options.enableFlippingBounds = BT_TRUE;
+      options.enableFarBounds = BT_TRUE;
+      options.printLevel = PL_LOW;
+      // 01.26
+      //options.initialStatusBounds = ST_INACTIVE;
+      //options.terminationTolerance = 1.0; // randomly trial for Premature homotopy termination error
+
+      exampleQ_x.setOptions( options );
+      exampleQ_y.setOptions( options );
       int_t nWSR_x = 50;
       real_t cpu_x = 10;
       //exampleQ_x.init(H.data(),g_x.data(),A_x.data(),NULL,NULL,lb_A_x.data(), ub_A_x.data(), nWSR_x,NULL );
       exampleQ_x.init(H_x_r, g_x_r, A_x_r, NULL, NULL, lb_A_x_r, ub_A_x_r, nWSR_x,NULL );
+
 
       bool qp_success_flag = true;
 
@@ -835,10 +840,7 @@ namespace truck_trajectory_estimator
 
     if (m_is_uav_traj_generate){
       int uav_predict_number;
-      if (m_truck_traj_start_time - m_uav_prev_traj_start_time > m_uav_landing_time)
-        uav_predict_number = int((m_uav_landing_time+m_truck_traj_start_time - m_uav_prev_traj_start_time+1) / m_truck_vis_predict_time_unit);
-      else
-        uav_predict_number = int(m_uav_landing_time / m_truck_vis_predict_time_unit);
+      uav_predict_number = int(m_uav_landing_time / m_truck_vis_predict_time_unit);
       std::cout << "!!!! landing time: " << m_uav_landing_time << ", predict num: " << uav_predict_number << "\n";
       for (int point_id = 0; point_id < uav_predict_number; ++point_id)
         {
