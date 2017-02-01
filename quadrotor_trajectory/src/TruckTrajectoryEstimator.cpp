@@ -521,7 +521,8 @@ namespace truck_trajectory_estimator
       g_y = -2 * T1 * truck_traj_param_extend_order_y;
 
       // Add constraints
-      int n_landing_samples = int(m_uav_landing_time/0.1);
+      double landing_sample_gap = 0.1;
+      int n_landing_samples = int(m_uav_landing_time/landing_sample_gap);
       /* We give equality constraints to start and end point. landing samples is related with unqueal constraints, so it does not include any one of the end, so we minus 1 in number */
       n_landing_samples -= 1;
       // Start and end's position, velocity and acceleration
@@ -616,7 +617,7 @@ namespace truck_trajectory_estimator
             A(2*i+1+4, j) = pow(cur_t, j-2) * j*(j-1);
             // For efficiency, in order to avoid multiple calculation of cur_t*cur_t, use the following iterative way.
             */
-          double cur_t = 0.1 * (i-3); // start from 0.1s instead of 0s, since velocity on 0s already have constraints.
+          double cur_t = landing_sample_gap * ((i-4)/2 + 1); // start from 0.1s instead of 0s, since velocity on 0s already have constraints.
           double mul = 1.0;
           A_x_r[i*m_uav_traj_order + 1] = 1.0;
           A_y_r[i*m_uav_traj_order + 1] = 1.0;
@@ -705,10 +706,10 @@ namespace truck_trajectory_estimator
       SQProblem exampleQ_y( m_uav_traj_order,n_constraints, HST_SEMIDEF);
 
       Options options;
-      options.enableRegularisation = BT_TRUE;
-      options.enableNZCTests = BT_TRUE;
-      options.enableFlippingBounds = BT_TRUE;
-      options.enableFarBounds = BT_TRUE;
+      // options.enableRegularisation = BT_TRUE;
+      // options.enableNZCTests = BT_TRUE;
+      // options.enableFlippingBounds = BT_TRUE;
+      // options.enableFarBounds = BT_TRUE;
       options.printLevel = PL_LOW;
       // 01.26
       //options.initialStatusBounds = ST_INACTIVE;
