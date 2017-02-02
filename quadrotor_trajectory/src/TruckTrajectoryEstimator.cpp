@@ -142,12 +142,13 @@ namespace truck_trajectory_estimator
           // Direct pid control
           if (m_uav_commander.m_direct_pid_mode)
             m_uav_commander.directPidTracking(1);
-          // else if (!m_uav_commander.isUavTruckNear(6.0)){
-          //   m_uav_state = 2;
-          //   std::cout << "UAV is far from truck.\n";
-          //   std::cout << "Return to pid tracking.\n";
-          //   m_uav_commander.directPidTracking(1);
-          // }
+          // Assume fisheye is 45 deg, we do not want truck to be out of our vision.
+          else if (!m_uav_commander.isUavTruckNear(1.0 * m_uav_commander.m_uav_world_pos.z())){
+            m_uav_state = 2;
+            ROS_WARN("UAV is far from truck.");
+            ROS_WARN("Return to pid tracking.");
+            m_uav_commander.directPidTracking(1);
+          }
           else if (!m_uav_traj_planning_flag){
             m_uav_commander.directPidTracking(1);
           }
@@ -858,7 +859,7 @@ namespace truck_trajectory_estimator
             cur_pose.pose.position.z = m_uav_commander.m_uav_world_pos.z() - m_uav_landing_vel*point_id*m_truck_vis_predict_time_unit;
           m_uav_des_traj_path_ptr->poses.push_back(cur_pose);
         }
-      if (m_uav_state >= 2){
+      if (m_uav_state == 3){
         m_pub_uav_des_traj_path.publish(*m_uav_des_traj_path_ptr);
       }
     }
