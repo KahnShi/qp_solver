@@ -499,9 +499,9 @@ namespace truck_trajectory_estimator
           T1(row_index, col_index) = T(row_index, col_index) * mul_factor / double(row_index+col_index + 1);
       for (int row_index = m_uav_traj_dev_order; row_index < m_uav_traj_order; ++row_index)
         for (int col_index = m_uav_traj_dev_order; col_index < m_uav_traj_order; ++col_index)
-          T2(row_index, col_index) = T2(row_index, col_index) * mul_factor / double(row_index+col_index-m_uav_traj_dev_order*2+1);
+          T2(row_index, col_index) = m_uav_lambda_D * T2(row_index, col_index) * mul_factor / double(row_index+col_index-m_uav_traj_dev_order*2+1);
 
-      H = T1 + m_uav_lambda_D * T2;
+      H = T1 + T2;
 
       double truck_t_offset = (*m_truck_odom_time_ptr)[m_n_truck_estimate_odom-1] - m_truck_traj_start_time;
       VectorXd truck_traj_param_extend_order_x = VectorXd::Zero(m_uav_traj_order);
@@ -574,7 +574,9 @@ namespace truck_trajectory_estimator
       }
 
       Vector3d truck_init_vel = nOrderTruckTrajectory(1, 0 + m_truck_estimate_start_time);
-      double truck_traj_related_time = realTimeCvtToTruckTrajectoryTime(m_uav_landing_time + m_truck_estimate_start_time, truck_init_vel);
+      /* Since result in polynomial estimation is not purely constant speed movement, map landing position to polynomial function. */
+      //double truck_traj_related_time = realTimeCvtToTruckTrajectoryTime(m_uav_landing_time + m_truck_estimate_start_time, truck_init_vel);
+      double truck_traj_related_time = m_uav_landing_time + m_truck_estimate_start_time;
       Vector3d truck_land_vel = nOrderTruckTrajectory(1, truck_traj_related_time);
       double truck_land_vel_abs = sqrt(pow(truck_land_vel.x(), 2) + pow(truck_land_vel.y(), 2));
       double truck_init_vel_abs = sqrt(pow(truck_init_vel.x(), 2) + pow(truck_init_vel.y(), 2));
@@ -582,11 +584,11 @@ namespace truck_trajectory_estimator
       /* In case velocity estimated by polynomial function is not accurate. */
       /* So we assume in this period, truck is constant velocity with its current velocity. */
       /* Otherwise, we do not have more information about future truck speed. */
-      lb_A_x_r[3] = truck_init_vel_abs * truck_land_vel.x()/truck_land_vel_abs;
-      //lb_A_x(3) = truck_land_vel.x();
+      //lb_A_x_r[3] = truck_init_vel_abs * truck_land_vel.x()/truck_land_vel_abs;
+      lb_A_x_r[3] = truck_land_vel.x();
       ub_A_x_r[3] = lb_A_x_r[3];
-      lb_A_y_r[3] = truck_init_vel_abs * truck_land_vel.y()/truck_land_vel_abs;
-      //lb_A_y(3) = truck_land_vel.y();
+      //lb_A_y_r[3] = truck_init_vel_abs * truck_land_vel.y()/truck_land_vel_abs;
+      lb_A_y_r[3] = truck_land_vel.y();
       ub_A_y_r[3] = lb_A_y_r[3];
 
 
