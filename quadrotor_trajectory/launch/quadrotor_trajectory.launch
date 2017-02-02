@@ -49,6 +49,7 @@
     <param name="uav_cmd_traj_track_i_gain"  value="0.0" />
     <param name="uav_cmd_traj_track_d_gain"  value="1.0" />
     <param name="uav_up_down_test"  value="false" />
+    <param name="uav_landing_constrints_period"  value="0.5" />
 
   </node>
 </launch>

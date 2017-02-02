@@ -104,6 +104,7 @@ namespace truck_trajectory_estimator
     double m_uav_landing_vel;
     // count for times when uav is state 2
     int m_uav_state2_cnt;
+    double m_uav_landing_sample_gap;
 
     // Subscriber
     ros::Subscriber m_sub_truck_odom;

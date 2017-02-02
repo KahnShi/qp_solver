@@ -48,6 +48,7 @@ namespace truck_trajectory_estimator
     pnh.param("uav_traj_derivation_order", m_uav_traj_dev_order, 4);
     pnh.param("uav_lambda_D", m_uav_lambda_D, 0.01);
     pnh.param("uav_up_down_test", m_uav_commander.m_up_down_test, false);
+    pnh.param("uav_landing_constrints_period", m_uav_landing_sample_gap, 0.1);
 
     if (m_uav_commander.m_direct_pid_mode)
       std::cout << "DIRECT PID MODE\n\n";
@@ -521,8 +522,7 @@ namespace truck_trajectory_estimator
       g_y = -2 * T1 * truck_traj_param_extend_order_y;
 
       // Add constraints
-      double landing_sample_gap = 0.1;
-      int n_landing_samples = int(m_uav_landing_time/landing_sample_gap);
+      int n_landing_samples = int(m_uav_landing_time/m_uav_landing_sample_gap);
       /* We give equality constraints to start and end point. landing samples is related with unqueal constraints, so it does not include any one of the end, so we minus 1 in number */
       n_landing_samples -= 1;
       // Start and end's position, velocity and acceleration
@@ -617,7 +617,7 @@ namespace truck_trajectory_estimator
             A(2*i+1+4, j) = pow(cur_t, j-2) * j*(j-1);
             // For efficiency, in order to avoid multiple calculation of cur_t*cur_t, use the following iterative way.
             */
-          double cur_t = landing_sample_gap * ((i-4)/2 + 1); // start from 0.1s instead of 0s, since velocity on 0s already have constraints.
+          double cur_t = m_uav_landing_sample_gap * ((i-4)/2 + 1); // start from 0.1s instead of 0s, since velocity on 0s already have constraints.
           double mul = 1.0;
           A_x_r[i*m_uav_traj_order + 1] = 1.0;
           A_y_r[i*m_uav_traj_order + 1] = 1.0;
