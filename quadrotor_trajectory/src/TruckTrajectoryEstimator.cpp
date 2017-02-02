@@ -454,12 +454,12 @@ namespace truck_trajectory_estimator
 
   bool TruckTrajectoryEstimator::uavTrajectoryPlanning()
   {
-    MatrixXd T = MatrixXd::Zero(m_uav_traj_order, m_uav_traj_order);
-    MatrixXd T1 = MatrixXd::Zero(m_uav_traj_order, m_uav_traj_order);
-    MatrixXd T2 = MatrixXd::Zero(m_uav_traj_order, m_uav_traj_order);
-    MatrixXd H = MatrixXd::Zero(m_uav_traj_order, m_uav_traj_order);
-    VectorXd g_x = VectorXd::Zero(m_uav_traj_order);
-    VectorXd g_y = VectorXd::Zero(m_uav_traj_order);
+    MatrixXd T = MatrixXd::Zero(m_uav_traj_order * 2, m_uav_traj_order * 2);
+    MatrixXd T1 = MatrixXd::Zero(m_uav_traj_order * 2, m_uav_traj_order * 2);
+    MatrixXd T2 = MatrixXd::Zero(m_uav_traj_order * 2, m_uav_traj_order * 2);
+    MatrixXd H = MatrixXd::Zero(m_uav_traj_order * 2, m_uav_traj_order * 2);
+    VectorXd g_x = VectorXd::Zero(m_uav_traj_order * 2);
+    VectorXd g_y = VectorXd::Zero(m_uav_traj_order * 2);
 
     double land_time, chase_time, uav_landing_init_time;
     land_time = (m_uav_commander.m_uav_world_pos.z() - m_truck_cable_height) / m_uav_commander.m_uav_vel_z;
@@ -479,45 +479,46 @@ namespace truck_trajectory_estimator
         time_factor += 0.5;
 
       // calculate 4-th order snap, then square it, then integral it.
-      VectorXd t_t_d = VectorXd::Zero(m_uav_traj_order);
-      VectorXd t_t = VectorXd::Zero(m_uav_traj_order);
+      MatrixXd t_t_d = MatrixXd::Zero(m_uav_traj_order * 2, 2);
+      MatrixXd t_t = MatrixXd::Zero(m_uav_traj_order * 2, 2);
       double mul_d = 1.0, mul_factor = m_uav_landing_time;
 
       for (int i = 0; i < m_uav_traj_order; ++i){
-        t_t[i] = mul_d;
+        t_t(i, 0) = mul_d;
+        t_t(i+m_uav_traj_order, 1) = t_t(i, 0);
         mul_d *= mul_factor;
       }
 
-      for (int i = m_uav_traj_dev_order; i < m_uav_traj_order; ++i)
-        {
-          t_t_d[i] = factorial(i, m_uav_traj_dev_order) * t_t[i - m_uav_traj_dev_order];
-        }
+      for (int i = m_uav_traj_dev_order; i < m_uav_traj_order; ++i){
+        t_t_d(i, 0) = factorial(i, m_uav_traj_dev_order) * t_t(i-m_uav_traj_dev_order, 0);
+        t_t_d(i+m_uav_traj_order, 1) = t_t_d(i, 0);
+      }
       T = t_t * t_t.transpose();
       T2 = t_t_d * t_t_d.transpose();
 
       for (int row_index = 0; row_index < m_uav_traj_order; ++row_index)
-        for (int col_index = 0; col_index < m_uav_traj_order; ++col_index)
+        for (int col_index = 0; col_index < m_uav_traj_order; ++col_index){
           T1(row_index, col_index) = T(row_index, col_index) * mul_factor / double(row_index+col_index + 1);
+          T1(row_index+m_uav_traj_order, col_index+m_uav_traj_order) = T1(row_index, col_index);
+        }
+
       for (int row_index = m_uav_traj_dev_order; row_index < m_uav_traj_order; ++row_index)
-        for (int col_index = m_uav_traj_dev_order; col_index < m_uav_traj_order; ++col_index)
+        for (int col_index = m_uav_traj_dev_order; col_index < m_uav_traj_order; ++col_index){
           T2(row_index, col_index) = m_uav_lambda_D * T2(row_index, col_index) * mul_factor / double(row_index+col_index-m_uav_traj_dev_order*2+1);
+          T2(row_index+m_uav_traj_order, col_index+m_uav_traj_order) = T2(row_index, col_index);
+        }
 
       H = T1 + T2;
 
       double truck_t_offset = (*m_truck_odom_time_ptr)[m_n_truck_estimate_odom-1] - m_truck_traj_start_time;
-      VectorXd truck_traj_param_extend_order_x = VectorXd::Zero(m_uav_traj_order);
-      VectorXd truck_traj_param_extend_order_y = VectorXd::Zero(m_uav_traj_order);
+      VectorXd truck_traj_param_extend_order = VectorXd::Zero(m_uav_traj_order * 2);
       for (int i = 0; i < m_truck_traj_order; ++i){
-        truck_traj_param_extend_order_x[i] += (*m_truck_traj_param_x_ptr)[i];
-        truck_traj_param_extend_order_y[i] += (*m_truck_traj_param_y_ptr)[i];
+        truck_traj_param_extend_order[i] += (*m_truck_traj_param_x_ptr)[i];
+        truck_traj_param_extend_order[i+m_truck_traj_order] += (*m_truck_traj_param_y_ptr)[i];
         for (int j = 0; j < i; ++j){
-          truck_traj_param_extend_order_x[j] += factorial(i, j) / factorial(j, j) * (*m_truck_traj_param_x_ptr)[i] * pow(truck_t_offset, j);
-          truck_traj_param_extend_order_y[j] += factorial(i, j) / factorial(j, j) * (*m_truck_traj_param_y_ptr)[i] * pow(truck_t_offset, j);
+          truck_traj_param_extend_order[j] += factorial(i, j) / factorial(j, j) * (*m_truck_traj_param_x_ptr)[i] * pow(truck_t_offset, i-j);
+          truck_traj_param_extend_order[j+m_truck_traj_order] += factorial(i, j) / factorial(j, j) * (*m_truck_traj_param_y_ptr)[i] * pow(truck_t_offset, i-j);
         }
-      }
-      for (int i = m_truck_traj_order; i < m_uav_traj_order; ++i){
-        truck_traj_param_extend_order_x[i] = 0;
-        truck_traj_param_extend_order_y[i] = 0;
       }
       g_x = -2 * T1 * truck_traj_param_extend_order_x;
       g_y = -2 * T1 * truck_traj_param_extend_order_y;

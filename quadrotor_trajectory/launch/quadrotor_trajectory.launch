@@ -34,7 +34,7 @@
 
     <param name="uav_traj_generate"  value="$(arg have_quadrotor)" />
     <param name="uav_traj_polynomial_order"  value="10" />
-    <param name="uav_traj_derivation_order"  value="3" />
+    <param name="uav_traj_derivation_order"  value="4" />
     <param name="uav_lambda_D"  value="1" />
     <param name="uav_vel_upper_bound"  value="7.0" />
     <param name="uav_vel_lower_bound"  value="-7.0" />
