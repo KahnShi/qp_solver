@@ -18,13 +18,13 @@ namespace vehicle_trajectory_estimator
     pnh.param("vehicle_trajectory_generate_freqency", m_vehicle_traj_generate_freq, 3);
     pnh.param("vehicle_visualization_predict_time", m_vehicle_vis_predict_time, 5.0);
     pnh.param("vehicle_vis_predict_time_unit", m_vehicle_vis_predict_time_unit, 0.2);
-    pnh.param("vehicle_visualization_preview_time", m_vehicle_vis_preview_time, 0.0);
+    pnh.param("vehicle_visualization_preview_time", m_vehicle_vis_preview_time, 2.0);
     pnh.param("vehicle_smooth_forward_time", m_vehicle_smooth_forward_time, 5.0);
     pnh.param("vehicle_trajectory_deviation_threshold", m_vehicle_traj_deviation_threshold, 1.5);
     pnh.param("vehicle_max_velocity", m_vehicle_max_vel, 4.5);
     pnh.param("vehicle_max_acceleration", m_vehicle_max_acc, 1.5);
     pnh.param("vehicle_cable_height", m_vehicle_cable_height, 0.5);
-    pnh.param("display_param", m_display_param, true);
+    pnh.param("display_param", m_display_param, false);
 
 
     m_n_current_odom = 0;
@@ -107,23 +107,15 @@ namespace vehicle_trajectory_estimator
           }
       }
     if (update_vehicle_traj_param){
-      ROS_INFO("1.1");
       std_msgs::Float64MultiArray param_array;
-      ROS_INFO("2.1");
       param_array.layout.dim.push_back(std_msgs::MultiArrayDimension());
-      ROS_INFO("3.1");
+      param_array.layout.dim.push_back(std_msgs::MultiArrayDimension());
       param_array.layout.dim[0].label = (std::string)("x");
-      ROS_INFO("3.2");
       param_array.layout.dim[0].size = m_vehicle_traj_order;
-      ROS_INFO("3.2");
       param_array.layout.dim[0].stride = m_vehicle_traj_order*m_vehicle_traj_order;
-      ROS_INFO("3.3");
       param_array.layout.dim[1].label = (std::string)("y");
-      ROS_INFO("3.2");
       param_array.layout.dim[1].size = m_vehicle_traj_order;
-      ROS_INFO("3.2");
       param_array.layout.dim[1].stride = m_vehicle_traj_order;
-      ROS_INFO("4.1");
       for (int i = 0; i < m_vehicle_traj_order; ++i){
         param_array.data.push_back((*m_vehicle_traj_param_x_ptr)[i]);
       }
@@ -136,7 +128,6 @@ namespace vehicle_trajectory_estimator
 
   void VehicleTrajectoryEstimator::vehicleTrajectoryEstimation()
   {
-    ROS_INFO("Estimation starts");
     MatrixXd T = MatrixXd::Zero(m_vehicle_traj_order * 2, m_vehicle_traj_order * 2);
     MatrixXd D = MatrixXd::Zero(m_vehicle_traj_order * 2, m_vehicle_traj_order * 2);
     MatrixXd H = MatrixXd::Zero(m_vehicle_traj_order * 2, m_vehicle_traj_order * 2);
@@ -237,17 +228,21 @@ namespace vehicle_trajectory_estimator
     /* Print qp's paramater and result for vehicle trajectory estimation. */
     //printf( " ];  objVal = %e\n\n", exampleQ.getObjVal() );
 
+
+    for (int i = 0; i < m_vehicle_traj_order; ++i){
+      (*m_vehicle_traj_param_x_ptr)[i] = param_r[i];
+      (*m_vehicle_traj_param_y_ptr)[i] = param_r[i + m_vehicle_traj_order];
+    }
+
     if (m_display_param){
       std::cout << "\nVehicle trajectory estimation:\n";
       std::cout <<"[x]: ";
       for (int i = 0; i < m_vehicle_traj_order; ++i){
-        (*m_vehicle_traj_param_x_ptr)[i] = param_r[i];
         std::cout << m_vehicle_traj_param_x_ptr->data()[i] << ", ";
       }
       printf("\n");
       std::cout <<"[y]: ";
       for (int i = 0; i < m_vehicle_traj_order; ++i){
-        (*m_vehicle_traj_param_y_ptr)[i] = param_r[i + m_vehicle_traj_order];
         std::cout << m_vehicle_traj_param_y_ptr->data()[i] << ", ";
       }
       printf("\nVehicle trajectory finished.\n\n");
