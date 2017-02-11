@@ -138,6 +138,7 @@ include_directories(
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
+  src/VehicleTrajectoryEstimator.cpp
   src/TruckTrajectoryEstimator.cpp
   src/QuadrotorCommand.cpp
 )
@@ -162,6 +163,8 @@ add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
 add_executable(truck_trajectory_estimator_node src/truck_trajectory_estimator_node.cpp)
 target_link_libraries (truck_trajectory_estimator_node ${catkin_LIBRARIES}  ${Boost_LIBRARIES} qpOASES ${PROJECT_NAME})
 
+add_executable(vehicle_trajectory_estimator_node src/vehicle_trajectory_estimator_node.cpp)
+target_link_libraries (vehicle_trajectory_estimator_node ${catkin_LIBRARIES}  ${Boost_LIBRARIES} qpOASES ${PROJECT_NAME})
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
