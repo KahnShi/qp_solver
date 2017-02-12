@@ -24,7 +24,7 @@ namespace vehicle_trajectory_estimator
     pnh.param("vehicle_max_velocity", m_vehicle_max_vel, 4.5);
     pnh.param("vehicle_max_acceleration", m_vehicle_max_acc, 1.5);
     pnh.param("vehicle_cable_height", m_vehicle_cable_height, 0.5);
-    pnh.param("display_param", m_display_param, false);
+    pnh.param("param_output_param", m_display_param, false);
 
 
     m_n_current_odom = 0;
