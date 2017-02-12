@@ -92,10 +92,7 @@ namespace vehicle_trajectory_estimator
     ros::Publisher m_pub_vehicle_traj_markers;
 
     void onInit();
-    void markerInit(visualization_msgs::Marker &marker, char color='r');
     void vehicleOdomCallback(const nav_msgs::OdometryConstPtr& vehicle_odom_msg);
-    void pathEstimator();
-    void pathVisualization();
     void vehicleTrajectoryEstimation();
     void trajectoryVisualization();
     // trajectory visualization based on same odom points

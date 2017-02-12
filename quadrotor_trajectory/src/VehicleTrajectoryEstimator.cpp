@@ -41,7 +41,7 @@ namespace vehicle_trajectory_estimator
     m_pub_vehicle_traj_path = m_nh.advertise<nav_msgs::Path>(m_vehicle_traj_path_pub_topic_name, 1);
   }
 
-  // 25 hz in simulation
+  // 50 hz in sim
   void VehicleTrajectoryEstimator::vehicleOdomCallback(const nav_msgs::OdometryConstPtr& vehicle_odom_msg)
   {
     m_vehicle_odom = *vehicle_odom_msg;
@@ -101,6 +101,7 @@ namespace vehicle_trajectory_estimator
             m_vehicle_odom_filled_flag = true;
             m_vehicle_traj_path_ptr = new nav_msgs::Path();
             m_vehicle_traj_path_ptr->header = m_vehicle_odom.header;
+            m_vehicle_traj_start_time = m_vehicle_estimate_start_time;
             vehicleTrajectoryEstimation();
             trajectoryVisualization();
             update_vehicle_traj_param = true;
@@ -112,10 +113,13 @@ namespace vehicle_trajectory_estimator
       param_array.layout.dim.push_back(std_msgs::MultiArrayDimension());
       param_array.layout.dim[0].label = (std::string)("x");
       param_array.layout.dim[0].size = m_vehicle_traj_order;
-      param_array.layout.dim[0].stride = m_vehicle_traj_order*m_vehicle_traj_order;
+      param_array.layout.dim[0].stride = m_vehicle_traj_order*2 + 1;
       param_array.layout.dim[1].label = (std::string)("y");
       param_array.layout.dim[1].size = m_vehicle_traj_order;
       param_array.layout.dim[1].stride = m_vehicle_traj_order;
+
+      double cur_start_time_offset = (*m_vehicle_odom_time_ptr)[m_n_vehicle_estimate_odom-1] - m_vehicle_traj_start_time;
+      param_array.data.push_back(cur_start_time_offset);
       for (int i = 0; i < m_vehicle_traj_order; ++i){
         param_array.data.push_back((*m_vehicle_traj_param_x_ptr)[i]);
       }

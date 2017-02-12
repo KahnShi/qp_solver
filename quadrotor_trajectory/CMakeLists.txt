@@ -138,6 +138,7 @@ include_directories(
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
+  src/VehicleTrajectoryBase.cpp
   src/VehicleTrajectoryEstimator.cpp
   src/QuadrotorCommand.cpp
 )
