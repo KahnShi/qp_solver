@@ -39,4 +39,19 @@ namespace vehicle_trajectory_base
       }
     return result;
   }
+
+
+  void VehicleTrajectoryBase::printAll()
+  {
+    std::cout << "Params number: " << m_vehicle_traj_order << "\n";
+    std::cout << "Param x: ";
+    for (int i = 0; i < m_vehicle_traj_order; ++i){
+      std::cout << (*m_vehicle_traj_param_x_ptr)[i] << ", ";
+    }
+    std::cout << "\nParam y: ";
+    for (int i = 0; i < m_vehicle_traj_order; ++i){
+      std::cout << (*m_vehicle_traj_param_y_ptr)[i] << ", ";
+    }
+    std::cout << "\n\n";
+  }
 }

@@ -47,6 +47,7 @@ namespace vehicle_trajectory_base
     void onInit(int order, std::vector<double> &data);
     int factorial(int n, int order);
     Vector3d nOrderVehicleTrajectory(int n, double t);
+    void printAll();
   };
 }
 #endif
