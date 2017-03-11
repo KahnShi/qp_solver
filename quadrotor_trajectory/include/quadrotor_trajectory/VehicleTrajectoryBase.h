@@ -10,7 +10,6 @@
 #include <nav_msgs/Path.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Point.h>
-#include <std_msgs/Float64MultiArray.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/MultiArrayDimension.h>
 

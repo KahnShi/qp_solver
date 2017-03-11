@@ -37,7 +37,7 @@ namespace vehicle_trajectory_estimator
 
     m_sub_vehicle_odom = m_nh.subscribe<nav_msgs::Odometry>(m_vehicle_odom_sub_topic_name, 1, &VehicleTrajectoryEstimator::vehicleOdomCallback, this);
 
-    m_pub_vehicle_traj_param = m_nh.advertise<std_msgs::Float64MultiArray>(m_vehicle_traj_param_pub_topic_name, 1);
+    m_pub_vehicle_traj_param = m_nh.advertise<quadrotor_trajectory::TrackParamStamped>(m_vehicle_traj_param_pub_topic_name, 1);
     m_pub_vehicle_traj_path = m_nh.advertise<nav_msgs::Path>(m_vehicle_traj_path_pub_topic_name, 1);
   }
 
@@ -108,23 +108,25 @@ namespace vehicle_trajectory_estimator
           }
       }
     if (update_vehicle_traj_param){
-      std_msgs::Float64MultiArray param_array;
-      param_array.layout.dim.push_back(std_msgs::MultiArrayDimension());
-      param_array.layout.dim.push_back(std_msgs::MultiArrayDimension());
-      param_array.layout.dim[0].label = (std::string)("x");
-      param_array.layout.dim[0].size = m_vehicle_traj_order;
-      param_array.layout.dim[0].stride = m_vehicle_traj_order*2 + 1;
-      param_array.layout.dim[1].label = (std::string)("y");
-      param_array.layout.dim[1].size = m_vehicle_traj_order;
-      param_array.layout.dim[1].stride = m_vehicle_traj_order;
+      //std_msgs::Float64MultiArray param_array;
+      quadrotor_trajectory::TrackParamStamped param_array;
+      param_array.header = m_vehicle_odom.header;
+      param_array.params.layout.dim.push_back(std_msgs::MultiArrayDimension());
+      param_array.params.layout.dim.push_back(std_msgs::MultiArrayDimension());
+      param_array.params.layout.dim[0].label = (std::string)("x");
+      param_array.params.layout.dim[0].size = m_vehicle_traj_order;
+      param_array.params.layout.dim[0].stride = m_vehicle_traj_order*2 + 1;
+      param_array.params.layout.dim[1].label = (std::string)("y");
+      param_array.params.layout.dim[1].size = m_vehicle_traj_order;
+      param_array.params.layout.dim[1].stride = m_vehicle_traj_order;
 
       double cur_start_time_offset = (*m_vehicle_odom_time_ptr)[m_n_vehicle_estimate_odom-1] - m_vehicle_traj_start_time;
-      param_array.data.push_back(cur_start_time_offset);
+      param_array.params.data.push_back(cur_start_time_offset);
       for (int i = 0; i < m_vehicle_traj_order; ++i){
-        param_array.data.push_back((*m_vehicle_traj_param_x_ptr)[i]);
+        param_array.params.data.push_back((*m_vehicle_traj_param_x_ptr)[i]);
       }
       for (int i = 0; i < m_vehicle_traj_order; ++i){
-        param_array.data.push_back((*m_vehicle_traj_param_y_ptr)[i]);
+        param_array.params.data.push_back((*m_vehicle_traj_param_y_ptr)[i]);
       }
       m_pub_vehicle_traj_param.publish(param_array);
     }

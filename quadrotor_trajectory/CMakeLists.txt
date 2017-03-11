@@ -15,10 +15,10 @@ set(PACKAGE_DEPENDENCIES
   nav_msgs
   dynamic_reconfigure
   tf
+  message_generation
 )
 
-find_package(catkin REQUIRED COMPONENTS ${PACKAGE_DEPENDENCIES}
-)
+find_package(catkin REQUIRED COMPONENTS ${PACKAGE_DEPENDENCIES})
 
 ## System dependenies are found with CMake's conventions
 find_package(cmake_modules REQUIRED)
@@ -29,6 +29,8 @@ add_subdirectory(qpOASES)
 link_directories(${CMAKE_CURRENT_BINARY_DIR}/qpOASES/qpOASES-3.0/bin)
 include_directories(include ${CMAKE_CURRENT_BINARY_DIR}/qpOASES/qpOASES-3.0/include)
 add_definitions(-DUSE_QPOASES)
+
+
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -61,11 +63,10 @@ add_definitions(-DUSE_QPOASES)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  TrackParamStamped.msg
+  )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -82,10 +83,10 @@ add_definitions(-DUSE_QPOASES)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+ generate_messages(
+   DEPENDENCIES
+   std_msgs  # Or other packages containing msgs
+ )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -118,8 +119,8 @@ generate_dynamic_reconfigure_options(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS ${PACKAGE_DEPENDENCIES}
-  DEPENDS system_lib
+  #CATKIN_DEPENDS ${PACKAGE_DEPENDENCIES}
+  DEPENDS system_lib 
 )
 
 ###########

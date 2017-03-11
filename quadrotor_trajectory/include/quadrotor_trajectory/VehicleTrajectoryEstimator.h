@@ -15,6 +15,7 @@
 #include <std_msgs/Float64MultiArray.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/MultiArrayDimension.h>
+#include <quadrotor_trajectory/TrackParamStamped.h>
 
 /* config */
 #include <dynamic_reconfigure/server.h>
