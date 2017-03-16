@@ -375,8 +375,10 @@ namespace vehicle_trajectory_estimator
     double distance = pow(getPointFromVehicleTrajectory('x', delta_t)-vehicle_pos.x, 2) + pow(getPointFromVehicleTrajectory('y', delta_t)-vehicle_pos.y, 2);
     if (distance > pow(threshold, 2))
       {
-        ROS_WARN("Vehicle is deviate from predict trajectoy.");
-        std::cout << "Deviation is : " << sqrt(distance) << ", threshold is : " << threshold << "\n";
+        if (m_display_param){
+          ROS_WARN("Vehicle is deviate from predict trajectoy.");
+          std::cout << "Deviation is : " << sqrt(distance) << ", threshold is : " << threshold << "\n";
+        }
         return true;
       }
     else
