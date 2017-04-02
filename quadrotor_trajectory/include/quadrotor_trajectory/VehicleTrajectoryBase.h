@@ -46,6 +46,7 @@ namespace vehicle_trajectory_base
     void onInit(int order, std::vector<double> &data);
     int factorial(int n, int order);
     Vector3d nOrderVehicleTrajectory(int n, double t);
+    bool isVehicleDeviateTrajectory(double threshold, geometry_msgs::Point vehicle_pos, double t);
     void printAll();
   };
 }

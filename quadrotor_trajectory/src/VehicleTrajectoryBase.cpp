@@ -40,6 +40,19 @@ namespace vehicle_trajectory_base
     return result;
   }
 
+  bool VehicleTrajectoryBase::isVehicleDeviateTrajectory(double threshold, geometry_msgs::Point vehicle_pos, double t)
+  {
+    Vector3d traj_pos = nOrderVehicleTrajectory(0, t);
+    double distance = pow(traj_pos[0] - vehicle_pos.x, 2) + pow(traj_pos[1] - vehicle_pos.y, 2);
+    if (distance > pow(threshold, 2))
+      {
+        ROS_WARN("Vehicle is deviate from predict trajectoy.");
+        std::cout << "Deviation is : " << sqrt(distance) << ", threshold is : " << threshold << "\n";
+        return true;
+      }
+    else
+      return false;
+  }
 
   void VehicleTrajectoryBase::printAll()
   {
