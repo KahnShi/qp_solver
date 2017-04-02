@@ -42,7 +42,9 @@ namespace vehicle_trajectory_base
     VectorXd *m_vehicle_traj_param_x_ptr;
     VectorXd *m_vehicle_traj_param_y_ptr;
     double m_vehicle_traj_start_time;
+    bool m_init_flag;
 
+    VehicleTrajectoryBase();
     void onInit(int order, std::vector<double> &data);
     int factorial(int n, int order);
     Vector3d nOrderVehicleTrajectory(int n, double t);

@@ -4,8 +4,14 @@
 //USING_NAMESPACE_QPOASES
 namespace vehicle_trajectory_base
 {
+  VehicleTrajectoryBase::VehicleTrajectoryBase()
+  {
+    m_init_flag = false;
+  }
+
   void VehicleTrajectoryBase::onInit(int order, std::vector<double> &data)
   {
+    m_init_flag = true;
     m_vehicle_traj_order = order;
     m_vehicle_traj_param_x_ptr = new VectorXd(m_vehicle_traj_order);
     m_vehicle_traj_param_y_ptr = new VectorXd(m_vehicle_traj_order);
@@ -27,6 +33,11 @@ namespace vehicle_trajectory_base
 
   Vector3d VehicleTrajectoryBase::nOrderVehicleTrajectory(int n, double t)
   {
+    if (!m_init_flag){
+      ROS_WARN("VehicleTrajectoryBase class is not initialized.");
+      return Vector3d(0.0, 0.0, 0.0);
+    }
+
     double temp = 1, delta_t;
     delta_t = t+m_vehicle_traj_start_time;
     Vector3d result(0.0, 0.0, 0.0);
@@ -42,6 +53,11 @@ namespace vehicle_trajectory_base
 
   bool VehicleTrajectoryBase::isVehicleDeviateTrajectory(double threshold, geometry_msgs::Point vehicle_pos, double t)
   {
+    if (!m_init_flag){
+      ROS_WARN("VehicleTrajectoryBase class is not initialized.");
+      return true;
+    }
+
     Vector3d traj_pos = nOrderVehicleTrajectory(0, t);
     double distance = pow(traj_pos[0] - vehicle_pos.x, 2) + pow(traj_pos[1] - vehicle_pos.y, 2);
     if (distance > pow(threshold, 2))
@@ -56,6 +72,10 @@ namespace vehicle_trajectory_base
 
   void VehicleTrajectoryBase::printAll()
   {
+    if (!m_init_flag){
+      ROS_WARN("VehicleTrajectoryBase class is not initialized.");
+      return;
+    }
     std::cout << "Params number: " << m_vehicle_traj_order << "\n";
     std::cout << "Param x: ";
     for (int i = 0; i < m_vehicle_traj_order; ++i){
